@@ -1,10 +1,12 @@
+import machine
+import time
 
-led = Pin("LED", Pin.OUT)
-led1 = PWM(Pin(0))
+led = machine.Pin("LED", machine.Pin.OUT)
+led1 = machine.PWM(machine.Pin(0))
 led1.freq(1000)
-led2 = PWM(Pin(1))
+led2 = machine.PWM(machine.Pin(1))
 led2.freq(1000)
-led3 = PWM(Pin(2))
+led3 = machine.PWM(machine.Pin(2))
 led3.freq(1000)
 led1.duty_u16(0)
 led2.duty_u16(0)

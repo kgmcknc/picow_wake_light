@@ -1,4 +1,6 @@
 
+import index_html
+
 _hexdig = '0123456789ABCDEFabcdef'
 _hextobyte = None
 
@@ -33,8 +35,7 @@ def process_read_data(read_data):
    decoded_read = read_data.decode()
    if(decoded_read[0:3] == 'GET'):
       if(decoded_read[0:14] == website_request):
-         html_file = open("webpage.html", "r")
-         html = html_file.read()
+         html = index_html.get_index_html()
          response = ['GET', create_html_packet(html)]
       else:
          print("got some other request")

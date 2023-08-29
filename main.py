@@ -1,5 +1,5 @@
 import time
-import network
+import picow_wifi
 import secret
 import server
 import json
@@ -7,7 +7,8 @@ import webpage
 import schedule
 import machine
 import led
-from machine import Pin, PWM
+
+picow_led = machine.Pin("LED", machine.Pin.OUT)
 
 max_connections = 1
 
@@ -18,39 +19,11 @@ def main():
    green_duty = 30000
    blue_duty = 30000
 
-   print('starting wifi')
-   ssid = secret.SSID
-   password = secret.PASSWORD
-   wlan = network.WLAN(network.STA_IF)
-   wlan.active(True)
-   wlan.connect(ssid, password)
+   device_ip = picow_wifi.create_access_point()
 
-   # Wait for connect or fail
-   max_wait = 10
-   while max_wait > 0:
-      data = wlan.status()
-      print('got', data)
-      if(data < 0):
-         time.sleep(1)
-         continue
-      if(data >= 3):
-         break;
-      max_wait = max_wait - 1
-      print('waiting for connection...')
-      print(data)
-      time.sleep(2)
+   #device_ip = picow_wifi.connect_to_wifi(secret.SSID, secret.PASSWORD)
+   device_port = 80
 
-   # Handle connection error
-   if wlan.status() != 3:
-      raise RuntimeError('network connection failed')
-   else:
-      print('connected')
-      status = wlan.ifconfig()
-      print(status)
-      device_ip = status[0]
-      device_port = 80
-      print( 'ip = ' + status[0] )
-   
    try:
       server_socket.create_socket(device_ip, device_port, max_connections)
       print("socket configured")
@@ -59,9 +32,9 @@ def main():
 
    led.init_led_test()
    led_on = 1
-   schedule.get_network_time()
+   #schedule.get_network_time()
 
-   while(wlan.status() == 3):
+   while(picow_wifi.wifi_connected()):
       try:
          read_ready = server_socket.check_socket()
       except:
@@ -103,20 +76,27 @@ def main():
       
       #led.led_test(led_on)
 
+   main_cleanup()
+
+def main_cleanup():
    server_socket.destroy_socket()
+   picow_wifi.network_shutdown()
 
 if __name__ == "__main__":
-   time.sleep(2)
-   print("Starting Main in 5 seconds")
-   led.on()
-   time.sleep(5)
-   led.off()
-   machine.reset()
+   time.sleep(1)
+   print("Starting Main in 1 seconds")
+   picow_led.on()
+   time.sleep(1)
+   picow_led.off()
    try:
       while(1):
          main()
-   except:
-      server_socket.destroy_socket()
-      print("main error, restarting in 5")
-      time.sleep(5)
+   except KeyboardInterrupt:
+      print("got keyboard interrupt. stopping now")
+      main_cleanup()
+   except Exception as e:
+      print("main error, resetting in 1 sec")
+      print(e)
+      main_cleanup()
+      time.sleep(1)
       machine.reset()
