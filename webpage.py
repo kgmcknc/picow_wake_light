@@ -30,20 +30,24 @@ def create_content_length_header(data):
    len_header = len_header + resp_header_cont_len + str(data_len) + '\r\n'
    return len_header
 
+def get_webpage():
+   html = index_html.get_index_html()
+   return create_html_packet(html)
+
 def process_read_data(read_data):
    response = None
+   if(read_data == b''):
+      return response
    decoded_read = read_data.decode()
-   if(decoded_read[0:3] == 'GET'):
-      if(decoded_read[0:14] == website_request):
-         html = index_html.get_index_html()
-         response = ['GET', create_html_packet(html)]
-      else:
-         print("got some other request")
-         print(decoded_read)
+   split_decode = decoded_read.split()
+   if(split_decode[0] == 'GET'):
+      get_data = unquote(split_decode[1][1:])
+      response = ['GET', get_data]
    else:
-      if(decoded_read[0:4] == 'POST'):
-         end_string = decoded_read.find("HTTP/1.1")
-         post_data = unquote(decoded_read[6:end_string])
+      if(split_decode[0] == 'POST'):
+         #end_string = decoded_read.find("HTTP/1.1")
+         #post_data = unquote(decoded_read[6:end_string])
+         post_data = unquote(split_decode[1][1:])
          response = ['POST', post_data]
       else:
          print("unknown data")
@@ -54,6 +58,8 @@ def unquote(string):
    new_string = ''
    startval = 0
    loc = string.find("%", startval)
+   if(loc < 0):
+      return string
    while(loc >= 0):
       new_string = new_string + string[startval:loc]
       startval = loc + 3

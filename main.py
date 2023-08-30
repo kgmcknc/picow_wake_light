@@ -2,6 +2,7 @@ import time
 import picow_wifi
 import secret
 import server
+import save_data
 import json
 import webpage
 import schedule
@@ -15,13 +16,10 @@ max_connections = 1
 server_socket = server.server_socket_class()
 
 def main():
-   red_duty = 30000
-   green_duty = 30000
-   blue_duty = 30000
+   database = save_data.save_data_class()
+   #device_ip = picow_wifi.create_access_point()
 
-   device_ip = picow_wifi.create_access_point()
-
-   #device_ip = picow_wifi.connect_to_wifi(secret.SSID, secret.PASSWORD)
+   device_ip = picow_wifi.connect_to_wifi(secret.SSID, secret.PASSWORD)
    device_port = 80
 
    try:
@@ -31,7 +29,6 @@ def main():
       server_socket.destroy_socket()
 
    led.init_led_test()
-   led_on = 1
    #schedule.get_network_time()
 
    while(picow_wifi.wifi_connected()):
@@ -42,41 +39,86 @@ def main():
          read_ready = False
       if(read_ready == True):
          read_data = server_socket.read_data(1024)
-         process_data = webpage.process_read_data(read_data)
-         if(process_data != None):
-            if(process_data[0] == 'GET'):
-               server_socket.write_data(process_data[1])
-            if(process_data[0] == 'POST'):
-               post_data = json.loads(process_data[1])
-               if "led_state" in post_data:
-                  if(post_data['led_state'] == "on"):
-                     print("led on!")
-                     led_on = 1
-                  if(post_data['led_state'] == "off"):
-                     print("led off!")
-                     led_on = 0
-               if "led_red" in post_data:
-                  red_duty = int(post_data["led_red"])
-               if "led_green" in post_data:
-                  green_duty = int(post_data["led_green"])
-               if "led_blue" in post_data:
-                  blue_duty = int(post_data["led_blue"])
-               empty_response = webpage.create_empty_response()
-               server_socket.write_data(empty_response)
-               server_socket.close_connection()
-         else:
+         try:
+            process_data = webpage.process_read_data(read_data)
+            if(process_data != None):
+               if(process_data[0] == 'GET'):
+                  if(process_data[1] == ''):
+                     server_socket.write_data(webpage.get_webpage())
+                  else:
+                     response = process_get_request(process_data[1])
+                     if(len(response) == 0):
+                        raise 
+                     server_socket.write_data(response)
+                     server_socket.close_connection()
+               if(process_data[0] == 'POST'):
+                  response = process_post_request(process_data[1])
+                  if(len(response) == 0):
+                     raise
+                  server_socket.write_data(response)
+                  server_socket.close_connection()
+            else:
+               raise
+         except:
             empty_response = webpage.create_empty_response()
             server_socket.write_data(empty_response)
             server_socket.close_connection()
       
-      if(led_on):
-         led.set_led(blue_duty, green_duty, red_duty)
-      else:
-         led.set_led(0,0,0)
-      
-      #led.led_test(led_on)
+      led.update_led()
 
    main_cleanup()
+
+def process_get_request(request):
+   response = dict()
+   try:
+      get_data = json.loads(request)
+   except:
+      get_data = dict()
+      print("json error", request)
+   if "led_state" in get_data:
+      if(led.get_led_state() == 0):
+         response['led_state'] = 'led_off'
+      else:
+         response['led_state'] = 'led_on'
+   if "led_duty" in get_data:
+      led_duty = led.get_led_duty()
+      response['led_red'] = led_duty[0]
+      response['led_green'] = led_duty[1]
+      response['led_blue'] = led_duty[2]
+   return json.dumps(response)
+
+def process_post_request(request):
+   response = dict()
+   try:
+      post_data = json.loads(request)
+   except:
+      post_data = dict()
+      print("json error", request)
+   if "led_state" in post_data:
+      if(post_data['led_state'] == 'on'):
+         print('led on!')
+         led.led_on()
+         response['led_state'] = 'led_on'
+      if(post_data['led_state'] == 'off'):
+         print('led off!')
+         led.led_off()
+         response['led_state'] = 'led_off'
+   if "led_red" in post_data:
+      duty = int(post_data['led_red'])
+      if(duty >= 0 and duty <= 65535):
+         led.configure_led_duty(red_duty=duty)
+         response['led_red'] = duty
+   if "led_green" in post_data:
+      duty = int(post_data['led_green'])
+      if(duty >= 0 and duty <= 65535):
+         led.configure_led_duty(green_duty=duty)
+         response['led_green'] = duty
+   if "led_blue" in post_data:
+      duty = int(post_data['led_blue'])
+      if(duty >= 0 and duty <= 65535):
+         led.configure_led_duty(blue_duty=duty)
+         response['led_blue'] = duty
+   return json.dumps(response)
 
 def main_cleanup():
    server_socket.destroy_socket()

@@ -1,6 +1,7 @@
 import machine
 import time
 
+led_state = 0
 led = machine.Pin("LED", machine.Pin.OUT)
 led1 = machine.PWM(machine.Pin(0))
 led1.freq(1000)
@@ -11,17 +12,59 @@ led3.freq(1000)
 led1.duty_u16(0)
 led2.duty_u16(0)
 led3.duty_u16(0)
+duty1 = 0
+duty2 = 0
+duty3 = 0
 
+def led_on():
+   global led_state
+   led_state = 1
 
-def set_led(red_duty, green_duty, blue_duty):
+def led_off():
+   global led_state
+   led_state = 0
+
+def get_led_state():
+   global led_state
+   return led_state
+
+def configure_led_duty(red_duty=None, green_duty=None, blue_duty=None):
    global duty1
    global duty2
    global duty3
-   led1.duty_u16(red_duty)
-   led2.duty_u16(green_duty)
-   led3.duty_u16(blue_duty)
+   if(red_duty != None):
+      duty3 = red_duty
+   if(green_duty != None):
+      duty2 = green_duty
+   if(blue_duty != None):
+      duty1 = blue_duty
+
+def get_led_duty():
+   global duty1
+   global duty2
+   global duty3
+   return (duty1, duty2, duty3)
+
+def set_led():
+   global led_state
+   global duty1
+   global duty2
+   global duty3
+
+   if(led_state == 0):
+      led1.duty_u16(0)
+      led2.duty_u16(0)
+      led3.duty_u16(0)
+   else:
+      led1.duty_u16(duty1)
+      led2.duty_u16(duty2)
+      led3.duty_u16(duty3)
+
+def update_led():
+   set_led()
 
 def init_led_test():
+   global led_state
    global test
    global duty
    global duty1
@@ -35,12 +78,13 @@ def init_led_test():
    global decrease1
    global decrease2
    global decrease3
-
+   
+   led_state = 1
    test = 2
    duty = 60000
-   duty1 = 0
-   duty2 = 0
-   duty3 = 0
+   duty1 = 30000
+   duty2 = 30000
+   duty3 = 30000
    increase = 0
    state = 0
    increase1 = 0
@@ -51,9 +95,12 @@ def init_led_test():
    decrease3 = 0
    
    print("starting led test")
+   configure_led_duty(duty1, duty2, duty3)
+   set_led()
    time.sleep(2)
 
-def led_test(led_on):
+def led_test():
+   global led_state
    global test
    global duty
    global duty1
@@ -68,7 +115,7 @@ def led_test(led_on):
    global decrease2
    global decrease3
 
-   if(led_on == 0):
+   if(led_state == 0):
       led1.duty_u16(0)
       led2.duty_u16(0)
       led3.duty_u16(0)

@@ -81,7 +81,7 @@ class server_socket_class:
 
    def close_connection(self):
       if(self.connected == 1):
-         print("connection closed")
+         #print("connection closed")
          self.connection.close()
          self.connected = 0
 
