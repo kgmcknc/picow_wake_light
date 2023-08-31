@@ -1,6 +1,5 @@
 import time
 import picow_wifi
-import secret
 import server
 import save_data
 import json
@@ -9,84 +8,108 @@ import schedule
 import machine
 import led
 
-picow_led = machine.Pin("LED", machine.Pin.OUT)
-wifi_ready = 0
-device_port = 80
 
-max_connections = 1
-
-server_socket = server.server_socket_class()
-wifi = picow_wifi.picow_network_class(ap_ssid="WAKELIGHT", ap_password="wakelight")
-database = save_data.save_data_class()
 
 def main():
-   wifi.configure_wifi(ssid="WilmotFiber", password="daisy09!", wait_for_connect=True, auto_connect=True)
+
+   # main, one time, initialization code
+   picow_led = machine.Pin("LED", machine.Pin.OUT)
+   server_socket = server.server_socket_class()
+   wifi = picow_wifi.picow_network_class(ap_ssid="WAKELIGHT", ap_password="wakelight")
+   database = save_data.save_data_class()
+   device_port = 80
+   max_socket_connections = 1
+   # done init code
+   print("Kids Wake To Sleep Light")
    
-   # ap = picow_wifi.picow_ap_class(ssid="WAKELIGHT", password="wakelight")
-   # wifi = picow_wifi.picow_wifi_class()
-
-   # get wifi ssid list
-   # if list is 0, connect as ap
-   # if list > 0, try to connect to wifi
-
-   # loop main once connected to something
-   # in main loop if connection is ap, check if wifi list is ever greater than 1 and wifi timeout is 0
-   # if you check all wifi and none work, set wifi timeout to a value and then it'll decrement if ever > 0 in main loop
-
-   # ap.enable_access_point()
-   # if(len(database.ssid_list) > 0){
-   # } else {
-      
-   # }
-   # device_ip = ap.get_ap_ip_address()
-
-   #device_ip = picow_wifi.connect_to_wifi(secret.SSID, secret.PASSWORD)
-
+   # main loop here
    try:
-      server_socket.create_socket(device_ip, device_port, max_connections)
-      print("socket configured")
-   except:
-      server_socket.destroy_socket()
-
-   led.init_led_test()
-   #schedule.get_network_time()
-
-   while(picow_wifi.wifi_connected()):
-      try:
-         read_ready = server_socket.check_socket()
-      except:
-         print("main_select_error")
-         read_ready = False
-      if(read_ready == True):
-         read_data = server_socket.read_data(1024)
-         try:
-            process_data = webpage.process_read_data(read_data)
-            if(process_data != None):
-               if(process_data[0] == 'GET'):
-                  if(process_data[1] == ''):
-                     server_socket.write_data(webpage.get_webpage())
-                  else:
-                     response = process_get_request(process_data[1])
-                     if(len(response) == 0):
-                        raise 
-                     server_socket.write_data(response)
-                     server_socket.close_connection()
-               if(process_data[0] == 'POST'):
-                  response = process_post_request(process_data[1])
-                  if(len(response) == 0):
-                     raise
-                  server_socket.write_data(response)
-                  server_socket.close_connection()
+      while True:
+         device_ip = ""
+         if(len(database.ssid_list) > 0):
+            wifi.configure_wifi(ssid=database.ssid_list, password=database.pw_list, auto_connect=False, wait_for_connect=True)
+         
+         # load schedule from database to schedule file
+         # load led stuff from database to led file
+         
+         print("Starting Web Check")
+         max_wifi_attempts = 3
+         while(wifi.check_network_connected() == False):
+            if(len(database.ssid_list) > 0 and max_wifi_attempts > 0):
+               wifi.set_network_mode(0)
+               wifi.enable_network()
+               wifi.connect_wifi()
+               max_wifi_attempts = max_wifi_attempts - 1
             else:
-               raise
-         except:
-            empty_response = webpage.create_empty_response()
-            server_socket.write_data(empty_response)
-            server_socket.close_connection()
-      
-      led.update_led()
+               wifi.set_network_mode(1)
+               wifi.enable_network()
+         
+         if(wifi.network_mode == 0):
+            print("Network is Wifi")
+         else:
+            print("Network is AP")
 
-   main_cleanup()
+         device_ip = wifi.get_ip_address()
+         sched = schedule.time_class()
+         sched.get_network_time()
+      
+         while (wifi.check_connection() == True):
+            led.init_led_test()
+            try:
+               server_socket.create_socket(device_ip, device_port, max_socket_connections)
+               print("socket configured")
+            except:
+               server_socket.destroy_socket()
+            
+            try:
+               read_ready = server_socket.check_socket()
+            except:
+               print("main_select_error")
+               read_ready = False
+            if(read_ready == True):
+               read_data = server_socket.read_data(1024)
+               try:
+                  process_data = webpage.process_read_data(read_data)
+                  if(process_data != None):
+                     if(process_data[0] == 'GET'):
+                        if(process_data[1] == ''):
+                           server_socket.write_data(webpage.get_webpage())
+                        else:
+                           response = process_get_request(process_data[1])
+                           if(len(response) == 0):
+                              raise 
+                           server_socket.write_data(response)
+                           server_socket.close_connection()
+                     if(process_data[0] == 'POST'):
+                        response = process_post_request(process_data[1])
+                        if(len(response) == 0):
+                           raise
+                        server_socket.write_data(response)
+                        server_socket.close_connection()
+                  else:
+                     raise
+               except:
+                  empty_response = webpage.create_empty_response()
+                  server_socket.write_data(empty_response)
+                  server_socket.close_connection()
+            
+            led.update_led()
+
+         # end of network connected while loop
+         print("restarting network")
+         main_cleanup(server_socket, wifi)
+      # end of while True
+   except KeyboardInterrupt:
+      print("got keyboard interrupt. stopping now")
+      main_cleanup(server_socket, wifi)
+      raise
+   except Exception as e:
+      print("main error, resetting in 1 sec")
+      main_cleanup(server_socket, wifi)
+      print(e)
+      time.sleep(1)
+      print("Kids Wake Light Done")
+      machine.reset()
 
 def process_get_request(request):
    response = dict()
@@ -140,7 +163,7 @@ def process_post_request(request):
          response['led_blue'] = duty
    return json.dumps(response)
 
-def main_cleanup():
+def main_cleanup(server_socket, wifi):
    server_socket.destroy_socket()
    wifi.disable_network()
 
@@ -153,12 +176,5 @@ if __name__ == "__main__":
    try:
       while(1):
          main()
-   except KeyboardInterrupt:
-      print("got keyboard interrupt. stopping now")
-      main_cleanup()
-   except Exception as e:
-      print("main error, resetting in 1 sec")
-      print(e)
-      main_cleanup()
-      time.sleep(1)
-      machine.reset()
+   except:
+      print("Kids Wake Light Done")

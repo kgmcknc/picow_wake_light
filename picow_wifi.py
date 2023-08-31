@@ -277,6 +277,13 @@ class picow_network_class(picow_ap_class, picow_wifi_class):
          self.disable_wifi()
       if(self.network_mode == 1):
          self.disable_access_point()
-         
+
+   def get_ip_address(self):
+         if(self.check_network_connected() == False):
+            return ""
+         if(self.network_mode == 0):
+            return self.wifi_ip_address
+         else:
+            return self.ap_ip_address
    
 

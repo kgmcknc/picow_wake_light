@@ -9,6 +9,12 @@ class save_data_class():
    led_red = 0
    led_green = 0
    led_blue = 0
+   wake_red = 0
+   wake_green = 0
+   wake_blue = 0
+   sleep_red = 0
+   sleep_green = 0
+   sleep_blue = 0
    hour_offset = 0
    wakesunday = []
    wakemonday = []
