@@ -10,17 +10,37 @@ import machine
 import led
 
 picow_led = machine.Pin("LED", machine.Pin.OUT)
+wifi_ready = 0
+device_port = 80
 
 max_connections = 1
 
 server_socket = server.server_socket_class()
+wifi = picow_wifi.picow_network_class(ap_ssid="WAKELIGHT", ap_password="wakelight")
+database = save_data.save_data_class()
 
 def main():
-   database = save_data.save_data_class()
-   #device_ip = picow_wifi.create_access_point()
+   wifi.configure_wifi(ssid="WilmotFiber", password="daisy09!", wait_for_connect=True, auto_connect=True)
+   
+   # ap = picow_wifi.picow_ap_class(ssid="WAKELIGHT", password="wakelight")
+   # wifi = picow_wifi.picow_wifi_class()
 
-   device_ip = picow_wifi.connect_to_wifi(secret.SSID, secret.PASSWORD)
-   device_port = 80
+   # get wifi ssid list
+   # if list is 0, connect as ap
+   # if list > 0, try to connect to wifi
+
+   # loop main once connected to something
+   # in main loop if connection is ap, check if wifi list is ever greater than 1 and wifi timeout is 0
+   # if you check all wifi and none work, set wifi timeout to a value and then it'll decrement if ever > 0 in main loop
+
+   # ap.enable_access_point()
+   # if(len(database.ssid_list) > 0){
+   # } else {
+      
+   # }
+   # device_ip = ap.get_ap_ip_address()
+
+   #device_ip = picow_wifi.connect_to_wifi(secret.SSID, secret.PASSWORD)
 
    try:
       server_socket.create_socket(device_ip, device_port, max_connections)
@@ -122,7 +142,7 @@ def process_post_request(request):
 
 def main_cleanup():
    server_socket.destroy_socket()
-   picow_wifi.network_shutdown()
+   wifi.disable_network()
 
 if __name__ == "__main__":
    time.sleep(1)
