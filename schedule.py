@@ -8,7 +8,6 @@ class time_class():
    def __init__(self, hour_offset=None):
       if(hour_offset != None):
          self.hour_offset = hour_offset
-      self.get_network_time()
 
    def get_network_time(self):
       try:

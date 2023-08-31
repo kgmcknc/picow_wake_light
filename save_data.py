@@ -55,7 +55,11 @@ class save_data_class():
          item = line.split(":", 1)
          if(item[0] in class_vars):
             if(item[1][0] == '['):
-               setattr(self, item[0], item[1])
+               if(item[1] == '[]'):
+                  list_data = []
+               else:
+                  list_data = item[1].strip('][').split(',')
+               setattr(self, item[0], list_data)
             else:
                setattr(self, item[0], int(item[1]))
       new_list = self.save_class_to_text_list()

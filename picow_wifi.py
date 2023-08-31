@@ -30,11 +30,12 @@ class picow_ap_class():
          self.ap_dns_server = dns_server
    
    def enable_access_point(self):
-      print("Enabling Network Access Point")
-      self.ap_active = True
-      self.ap.config(ssid=self.ap_ssid, password=self.ap_password)
-      self.ap.ifconfig((self.ap_ip_address, self.ap_subnet_mask, self.ap_gateway, self.ap_dns_server))
-      self.ap.active(True)
+      if(self.ap_active == False):
+         print("Enabling Network Access Point")
+         self.ap_active = True
+         self.ap.config(ssid=self.ap_ssid, password=self.ap_password)
+         self.ap.ifconfig((self.ap_ip_address, self.ap_subnet_mask, self.ap_gateway, self.ap_dns_server))
+         self.ap.active(True)
 
       while(self.ap.active() == False):
          sleep(0.5)
@@ -43,7 +44,6 @@ class picow_ap_class():
       
       print(f"Made Access Point: SSID={self.ap_ssid}, PW={self.ap_password}")
       print(self.ap)
-      self.ap_ip_address
    
    def disable_access_point(self):
       if(self.ap_active == True):
@@ -129,10 +129,11 @@ class picow_wifi_class():
             self.wifi_ssid_select = selection
 
    def enable_wifi(self):
-      self.wifi_active = True
-      self.wifi_connected = False
+      if(self.wifi_active == False):
+         self.wifi.active(True)
+         self.wifi_active = True
+         self.wifi_connected = False
       self.wifi_connect_counter = 0
-      self.wifi.active(True)
       # while(self.wifi.active() == False):
       while(self.wifi.status() < 0):
          sleep(0.1)
@@ -140,7 +141,7 @@ class picow_wifi_class():
       sleep(1)
       self.scan_wifi()
       self.check_wifi_ready()
-      if(self.wifi_auto_connect == True):
+      if(self.wifi_auto_connect == True and self.wifi_connected == False):
          self.connect_wifi()
    
    def disable_wifi(self):
@@ -200,13 +201,13 @@ class picow_wifi_class():
    
    def wait_for_connected(self):
       while(self.wifi_active == True and self.wifi_connected == False and self.connect_counter < self.max_connect_count):
-         self.check_connection()
+         self.check_wifi_connection()
          if(self.wifi_connected == False):
             self.connect_counter = self.connect_counter + 1
             if(self.wifi_connect_sleep > 0):
                sleep(self.wifi_connect_sleep)
       
-   def check_connection(self):
+   def check_wifi_connection(self):
       if(self.wifi_active == False):
          self.wifi_connected = False
          self.connect_counter = 0
@@ -253,13 +254,15 @@ class picow_network_class(picow_ap_class, picow_wifi_class):
             self.enable_access_point()
 
    def check_network_connected(self):
+      if(self.network_mode == -1):
+         return False
       if(self.network_mode == 0):
-         if(self.ap_active == True):
+         if(self.wifi_active == True and self.wifi_connected == True):
             return True
          else:
             return False
-      else:
-         if(self.wifi_active == True and self.wifi_connected == True):
+      if(self.network_mode == 1):
+         if(self.ap_active == True):
             return True
          else:
             return False

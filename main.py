@@ -8,12 +8,11 @@ import schedule
 import machine
 import led
 
-
+picow_led = machine.Pin("LED", machine.Pin.OUT)
 
 def main():
 
    # main, one time, initialization code
-   picow_led = machine.Pin("LED", machine.Pin.OUT)
    server_socket = server.server_socket_class()
    wifi = picow_wifi.picow_network_class(ap_ssid="WAKELIGHT", ap_password="wakelight")
    database = save_data.save_data_class()
@@ -35,6 +34,7 @@ def main():
          print("Starting Web Check")
          max_wifi_attempts = 3
          while(wifi.check_network_connected() == False):
+            print("Finding Network Connection...")
             if(len(database.ssid_list) > 0 and max_wifi_attempts > 0):
                wifi.set_network_mode(0)
                wifi.enable_network()
@@ -50,11 +50,13 @@ def main():
             print("Network is AP")
 
          device_ip = wifi.get_ip_address()
+         print("device_ip")
          sched = schedule.time_class()
          sched.get_network_time()
       
-         while (wifi.check_connection() == True):
-            led.init_led_test()
+         while (wifi.check_network_connected() == True):
+            led.blink_ip_addr(picow_led, device_ip)
+            continue
             try:
                server_socket.create_socket(device_ip, device_port, max_socket_connections)
                print("socket configured")
@@ -102,7 +104,6 @@ def main():
    except KeyboardInterrupt:
       print("got keyboard interrupt. stopping now")
       main_cleanup(server_socket, wifi)
-      raise
    except Exception as e:
       print("main error, resetting in 1 sec")
       main_cleanup(server_socket, wifi)
@@ -174,7 +175,7 @@ if __name__ == "__main__":
    time.sleep(1)
    picow_led.off()
    try:
-      while(1):
-         main()
+      main()
+      print("Kids Wake Light Done")
    except:
       print("Kids Wake Light Done")

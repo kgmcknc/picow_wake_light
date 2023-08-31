@@ -1,6 +1,9 @@
 import machine
 import time
 
+saved_ip = ""
+blink_ip_index = 0
+
 led_state = 0
 led = machine.Pin("LED", machine.Pin.OUT)
 led1 = machine.PWM(machine.Pin(0))
@@ -15,6 +18,41 @@ led3.duty_u16(0)
 duty1 = 0
 duty2 = 0
 duty3 = 0
+
+def blink_ip_addr(led, ip_addr):
+   global saved_ip
+   global blink_ip_index
+
+   if(ip_addr != saved_ip):
+      saved_ip = ip_addr
+      blink_ip_index = 0
+   
+   if(saved_ip[blink_ip_index] == '.'):
+      blink(led, 2, 1, 1)
+   else:
+      blink(led, 0.5, 0.5, int(saved_ip[blink_ip_index]))
+
+   blink_ip_index = blink_ip_index + 1
+   if(blink_ip_index >= len(saved_ip)):
+      blink_ip_index = 0
+   time.sleep(1)
+
+def blink(led, active_time, inactive_time, count, blink_polarity=1):
+   blink_count = 0
+   while(blink_count < count):
+      if(blink_polarity == 1):
+         # blinks on
+         led.on()
+         time.sleep(active_time)
+         led.off()
+         time.sleep(inactive_time)
+      else:
+         # blinks off
+         led.off()
+         time.sleep(active_time)
+         led.on()
+         time.sleep(inactive_time)
+      blink_count = blink_count + 1
 
 def led_on():
    global led_state
