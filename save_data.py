@@ -1,5 +1,5 @@
 save_file_name = "./save_file.txt"
-class_data_updated = 0
+class_data_updated = False
 save_fp = 0
 
 class save_data_class():
@@ -32,8 +32,10 @@ class save_data_class():
    def init_class_from_save_file(self):
       open_error = 0
       try:
+         print("Trying to read save file")
          self.read_save_file()
-      except:
+      except Exception as e:
+         print(e)
          open_error = 1
       if(open_error == 1):
          try:
@@ -57,7 +59,7 @@ class save_data_class():
       for line in file_lines:
          item = line.split(":", 1)
          if(item[0] in class_vars):
-            if(len(item) > 1):
+            if(len(item) > 1 and len(item[1]) > 0):
                if(item[1][0] == '['):
                   if(item[1] == '[]'):
                      list_data = []
@@ -109,3 +111,9 @@ class save_data_class():
          if(not callable(getattr(self, var)) and not var.startswith("__")):
             ret_list.append(var)
       return ret_list
+   
+   def sync_file(self):
+      global class_data_updated
+      if(class_data_updated == True):
+         class_data_updated = False
+         self.rewrite_save_file()

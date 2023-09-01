@@ -11,14 +11,16 @@ class server_socket_class:
       self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
    
    def create_socket(self, device_ip = None, device_port = 80, max_connections = 1):
-      if(device_ip == None):
-         raise
-      else:
-         #self.server_socket.setblocking(False)
-         self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-         self.server_socket.bind((device_ip, device_port))
-         self.server_socket.listen(max_connections)
-         self.created = 1
+      if(device_ip != None):
+         if(self.created == 0):
+            try:
+               #self.server_socket.setblocking(False)
+               self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
+               self.server_socket.bind((device_ip, device_port))
+               self.server_socket.listen(max_connections)
+               self.created = 1
+            except:
+               self.destroy_socket()
 
    def socket_select_check(self, timeout=0):
       rx_list = [self.server_socket]
@@ -59,6 +61,15 @@ class server_socket_class:
       except:
          self.connected = 0
 
+   def check_read_ready(self):
+      try:
+         read_ready = self.socket_select_check()
+      except Exception as e:
+         print(e)
+         print("socket_select_error")
+         read_ready = False
+      return read_ready
+
    def read_data(self, buffer_size):
       if(self.connected == 1):
          try:
@@ -75,7 +86,7 @@ class server_socket_class:
    def write_data(self, data):
       if(self.connected == 1):
          try:
-            self.connection.send(data)
+            self.connection.write(data)
          except:
             print("error writing")
 

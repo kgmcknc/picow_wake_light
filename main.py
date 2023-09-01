@@ -30,6 +30,8 @@ def main():
          led.configure_led_duty(10000, 0, 0)
          led.led_on()
 
+         wifi.ap_ssid = database.ap_ssid
+         wifi.ap_password = database.ap_pw
          if(len(database.ssid_list) > 0):
             wifi.configure_wifi(ssid=database.ssid_list, password=database.pw_list, auto_connect=False, wait_for_connect=True)
          
@@ -40,7 +42,7 @@ def main():
          max_wifi_attempts = 3
          while(wifi.check_network_connected() == False):
             print("Finding Network Connection...")
-            if(len(database.ssid_list) > 0 and max_wifi_attempts > 0):
+            if(len(database.ssid_list) > 0 and max_wifi_attempts > 0 and wifi.force_ap_mode is False):
                wifi.set_network_mode(0)
                wifi.enable_network()
                wifi.connect_wifi()
@@ -55,7 +57,7 @@ def main():
             print("Network is AP")
 
          device_ip = wifi.get_ip_address()
-         print("device_ip")
+         print(device_ip)
          sched = schedule.time_class()
          sched.get_network_time()
 
@@ -68,51 +70,25 @@ def main():
             led.set_led()
       
          while (wifi.check_network_connected() == True):
+            
+            # FIX LED BLINK SO ITS NOT BLOCKING!!
+
             led.blink_ip_addr(picow_led, device_ip)
             
-            if(server_socket.created == 0):
-               try:
-                  server_socket.create_socket(device_ip, device_port, max_socket_connections)
-               except:
-                  server_socket.destroy_socket()
-            if(server_socket.connected):
-               server_socket.close_connection()
-            try:
-               read_ready = server_socket.socket_select_check()
-            except Exception as e:
-               print(e)
-               print("socket_select_error")
-               read_ready = False
+            server_socket.create_socket(device_ip, device_port, max_socket_connections)
+            read_ready = server_socket.check_read_ready()
             if(read_ready == True):
                read_data = server_socket.read_data(1024)
                try:
-                  process_data = webpage.process_read_data(read_data)
-                  if(process_data != None):
-                     if(process_data[0] == 'GET'):
-                        if(process_data[1] == ''):
-                           server_socket.write_data(webpage.get_webpage())
-                        else:
-                           response = process_get_request(process_data[1])
-                           if(len(response) == 0):
-                              raise 
-                           server_socket.write_data(response)
-                           server_socket.close_connection()
-                     if(process_data[0] == 'POST'):
-                        response = process_post_request(process_data[1])
-                        if(len(response) == 0):
-                           raise
-                        server_socket.write_data(response)
-                        server_socket.close_connection()
-                  else:
-                     raise
+                  response_data = process_socket_read(read_data, wifi)
                except:
-                  empty_response = webpage.create_empty_response()
-                  server_socket.write_data(empty_response)
-                  server_socket.close_connection()
-            
+                  response_data = None
+               send_response(server_socket, response_data)
             #led.update_led()
+            sync_save_file(database, wifi)
 
          # end of network connected while loop
+         sync_save_file(database, wifi)
          print("restarting network")
          main_cleanup(server_socket, wifi)
       # end of while True
@@ -127,7 +103,51 @@ def main():
       print("Kids Wake Light Done")
       machine.reset()
 
-def process_get_request(request):
+def sync_save_file(database: save_data.save_data_class, wifi: picow_wifi.picow_network_class):
+   file_changed = False
+   if(database.ap_ssid != wifi.ap_ssid):
+      database.ap_ssid = wifi.ap_ssid
+      file_changed = True
+   if(database.ap_pw != wifi.ap_password):
+      database.ap_pw = wifi.ap_password
+      file_changed = True
+   if(database.ssid_list != wifi.wifi_ssid_list):
+      database.ssid_list = wifi.wifi_ssid_list
+      file_changed = True
+   if(database.pw_list != wifi.wifi_pw_list):
+      database.pw_list = wifi.wifi_pw_list
+      file_changed = True
+   
+   if(file_changed == True):
+      save_data.class_data_updated = True
+      database.sync_file()
+
+def process_socket_read(read_data, wifi):
+   response_data = None
+   process_data = webpage.process_read_data(read_data)
+   if(process_data == None):
+      return None
+   if(process_data[0] == 'GET'):
+      if(process_data[1] == ''):
+         response_data = webpage.get_webpage()
+      else:
+         response_data = process_get_request(process_data[1], wifi)
+   if(process_data[0] == 'POST'):
+      response_data = process_post_request(process_data[1], wifi)
+   return response_data
+   
+def send_response(server_socket, response):
+   if(response == None):
+      response_data = webpage.create_empty_response()
+   else:
+      if(len(response) == 0):
+         response_data = webpage.create_empty_response()
+      else:
+         response_data = response
+   server_socket.write_data(response_data)
+   server_socket.close_connection()
+
+def process_get_request(request, wifi: picow_wifi.picow_network_class):
    response = dict()
    try:
       get_data = json.loads(request)
@@ -144,12 +164,17 @@ def process_get_request(request):
       response['led_red'] = led_duty[0]
       response['led_green'] = led_duty[1]
       response['led_blue'] = led_duty[2]
+   if "get_wifi_ssid" in get_data:
+      response['get_wifi_ssid'] = wifi.wifi_ssid_list
+   if "get_ap_ssid" in get_data:
+      response['get_ap_ssid'] = wifi.ap_ssid
    return json.dumps(response)
 
-def process_post_request(request):
+def process_post_request(request, wifi: picow_wifi.picow_network_class):
    response = dict()
    try:
       post_data = json.loads(request)
+      print(post_data)
    except:
       post_data = dict()
       print("json error", request)
@@ -177,11 +202,34 @@ def process_post_request(request):
       if(duty >= 0 and duty <= 65535):
          led.configure_led_duty(blue_duty=duty)
          response['led_blue'] = duty
+   if "add_wifi_ssid" in post_data:
+      new_ssid = post_data["add_wifi_ssid"]["ssid"]
+      new_password = post_data["add_wifi_ssid"]["password"]
+      wifi.add_ssid(new_ssid, new_password)
+      response['add_wifi_ssid'] = "success"
+   if "remove_wifi_ssid" in post_data:
+      rem_ssid = post_data["rem_wifi_ssid"]
+      wifi.remove_ssid(rem_ssid)
+      response['remove_wifi_ssid'] = "success"
+   if "set_ap_ssid" in post_data:
+      new_ssid = post_data["set_ap_ssid"]["ssid"]
+      new_password = post_data["set_ap_ssid"]["password"]
+      wifi.set_ap_ssid(new_ssid, new_password)
+      response['set_ap_ssid'] = "success"
+   if "clear_ap_ssid" in post_data:
+      rem_ssid = post_data["clear_ap_ssid"]
+      wifi.clear_ap_ssid()
+      response['clear_ap_ssid'] = "success"
+   if "restart_network" in post_data:
+      wifi.disconnect_on_next_check = True
+      response['restart_network'] = "success"
+
    return json.dumps(response)
 
 def main_cleanup(server_socket, wifi):
    server_socket.destroy_socket()
    wifi.disable_network()
+   led.led_off()
 
 if __name__ == "__main__":
    time.sleep(1)

@@ -2,11 +2,14 @@
 import network
 from time import sleep
 
+default_ap_ssid = "PI_PICOW"
+default_ap_password = "pi_picow"
+
 class picow_ap_class():
    ap = network.WLAN(network.AP_IF)
    ap_active = False
-   ap_ssid = "PICOW"
-   ap_password = "picow"
+   ap_ssid = ""
+   ap_password = ""
    ap_gateway = '192.168.4.1' # currently can't change due to bug in picow fw
    ap_subnet_mask = '255.255.0.0'
    ap_ip_address = '192.168.4.1' # currently can't change due to bug in picow fw
@@ -33,18 +36,35 @@ class picow_ap_class():
       if(self.ap_active == False):
          print("Enabling Network Access Point")
          self.ap_active = True
-         self.ap.config(ssid=self.ap_ssid, password=self.ap_password)
+         if(self.ap_ssid != ""):
+            ssid = self.ap_ssid
+         else:
+            ssid = default_ap_ssid
+         if(self.ap_password != ""):
+            password = self.ap_password
+         else:
+            password = default_ap_password
+         self.ap.config(ssid=ssid, password=password)
          self.ap.ifconfig((self.ap_ip_address, self.ap_subnet_mask, self.ap_gateway, self.ap_dns_server))
          self.ap.active(True)
 
-      while(self.ap.active() == False):
-         sleep(0.5)
+         while(self.ap.active() == False):
+            sleep(0.5)
 
-      self.ap.ifconfig((self.ap_ip_address, self.ap_subnet_mask, self.ap_gateway, self.ap_dns_server))
-      
-      print(f"Made Access Point: SSID={self.ap_ssid}, PW={self.ap_password}")
-      print(self.ap)
+         self.ap.ifconfig((self.ap_ip_address, self.ap_subnet_mask, self.ap_gateway, self.ap_dns_server))
+         
+         print(f"Made Access Point: SSID={ssid}, PW={password}")
+         print(self.ap)
    
+   def set_ap_ssid(self, ssid=None, password=None):
+      if(ssid != None and password != None):
+         self.ap_ssid = ssid
+         self.ap_password = password
+   
+   def clear_ap_ssid(self):
+      self.ap_ssid = ""
+      self.password = ""
+
    def disable_access_point(self):
       if(self.ap_active == True):
          print("Disabling Network Access Point")
@@ -228,6 +248,8 @@ class picow_wifi_class():
    
 class picow_network_class(picow_ap_class, picow_wifi_class):
    network_mode = 0 # mode -1 is not_configured, mode 0 is wifi, mode 1 is AP
+   force_ap_mode = False
+   disconnect_on_next_check = False
    
    def __init__(self, ap_ssid=None, ap_password=None, wifi_ssid=None, wifi_password=None):
       self.configure_access_point(ssid=ap_ssid, password=ap_password)
@@ -254,6 +276,9 @@ class picow_network_class(picow_ap_class, picow_wifi_class):
             self.enable_access_point()
 
    def check_network_connected(self):
+      if(self.disconnect_on_next_check == True):
+         self.disconnect_on_next_check = False
+         return False
       if(self.network_mode == -1):
          return False
       if(self.network_mode == 0):
