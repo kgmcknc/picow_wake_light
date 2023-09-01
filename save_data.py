@@ -51,7 +51,7 @@ class save_data_class():
       global save_file_name
       global save_fp
 
-      save_fp = open(save_file_name, "rt")
+      save_fp = open(save_file_name, "r")
       file_data = save_fp.read()
       save_fp.close()
       file_lines = file_data.splitlines()

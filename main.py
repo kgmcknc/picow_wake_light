@@ -73,7 +73,7 @@ def main():
             
             # FIX LED BLINK SO ITS NOT BLOCKING!!
 
-            led.blink_ip_addr(picow_led, device_ip)
+            # led.blink_ip_addr(picow_led, device_ip)
             
             server_socket.create_socket(device_ip, device_port, max_socket_connections)
             read_ready = server_socket.check_read_ready()
