@@ -20,7 +20,7 @@ class server_socket_class:
          self.server_socket.listen(max_connections)
          self.created = 1
 
-   def check_socket(self, timeout=0):
+   def socket_select_check(self, timeout=0):
       rx_list = [self.server_socket]
       tx_list = []
       x_list = []

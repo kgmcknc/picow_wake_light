@@ -3,6 +3,8 @@ class_data_updated = 0
 save_fp = 0
 
 class save_data_class():
+   ap_ssid = ''
+   ap_pw = ''
    ssid_list = []
    pw_list = []
    ip_list = []
@@ -35,12 +37,13 @@ class save_data_class():
          open_error = 1
       if(open_error == 1):
          try:
+            print("Trying to create default save file")
             self.initialize_save_file()
          except Exception as e:
             print(e)
             open_error = 2
       if(open_error == 2):
-         print("couldn't init save")
+         print("Couldn't initialize default save data")
 
    def read_save_file(self):
       global save_file_name
@@ -54,14 +57,15 @@ class save_data_class():
       for line in file_lines:
          item = line.split(":", 1)
          if(item[0] in class_vars):
-            if(item[1][0] == '['):
-               if(item[1] == '[]'):
-                  list_data = []
+            if(len(item) > 1):
+               if(item[1][0] == '['):
+                  if(item[1] == '[]'):
+                     list_data = []
+                  else:
+                     list_data = item[1].strip('][').split(',')
+                  setattr(self, item[0], list_data)
                else:
-                  list_data = item[1].strip('][').split(',')
-               setattr(self, item[0], list_data)
-            else:
-               setattr(self, item[0], int(item[1]))
+                  setattr(self, item[0], int(item[1]))
       new_list = self.save_class_to_text_list()
       if(file_lines != new_list):
          print("save file doesn't match class...rewriting save file")
@@ -71,7 +75,10 @@ class save_data_class():
       text_list = []
       class_vars = self.get_class_var_list()
       for class_var in class_vars:
-         new_line = f"""{class_var}:{getattr(self, class_var)}"""
+         data = getattr(self, class_var)
+         # if(data == ''):
+         #    data = '\'\''
+         new_line = f"""{class_var}:{data}"""
          text_list.append(new_line)
       return text_list
 
@@ -84,6 +91,7 @@ class save_data_class():
       init_text = "\n".join(text_list)
       save_fp.write(init_text)
       save_fp.close()
+      print("Initialized save file")
 
    def rewrite_save_file(self):
       global save_fp

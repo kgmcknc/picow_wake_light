@@ -19,12 +19,17 @@ def main():
    device_port = 80
    max_socket_connections = 1
    # done init code
+   
    print("Kids Wake To Sleep Light")
    
    # main loop here
    try:
       while True:
          device_ip = ""
+         
+         led.configure_led_duty(10000, 0, 0)
+         led.led_on()
+
          if(len(database.ssid_list) > 0):
             wifi.configure_wifi(ssid=database.ssid_list, password=database.pw_list, auto_connect=False, wait_for_connect=True)
          
@@ -53,20 +58,30 @@ def main():
          print("device_ip")
          sched = schedule.time_class()
          sched.get_network_time()
+
+         if(sched.time_locked == True):
+            # load wake schedule light
+            pass
+         else:
+            # load last saved static led settings from database here
+            led.configure_led_duty(0, 0, 10000)
+            led.set_led()
       
          while (wifi.check_network_connected() == True):
             led.blink_ip_addr(picow_led, device_ip)
-            continue
-            try:
-               server_socket.create_socket(device_ip, device_port, max_socket_connections)
-               print("socket configured")
-            except:
-               server_socket.destroy_socket()
             
+            if(server_socket.created == 0):
+               try:
+                  server_socket.create_socket(device_ip, device_port, max_socket_connections)
+               except:
+                  server_socket.destroy_socket()
+            if(server_socket.connected):
+               server_socket.close_connection()
             try:
-               read_ready = server_socket.check_socket()
-            except:
-               print("main_select_error")
+               read_ready = server_socket.socket_select_check()
+            except Exception as e:
+               print(e)
+               print("socket_select_error")
                read_ready = False
             if(read_ready == True):
                read_data = server_socket.read_data(1024)
@@ -95,7 +110,7 @@ def main():
                   server_socket.write_data(empty_response)
                   server_socket.close_connection()
             
-            led.update_led()
+            #led.update_led()
 
          # end of network connected while loop
          print("restarting network")

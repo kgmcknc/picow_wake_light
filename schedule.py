@@ -12,9 +12,9 @@ class time_class():
    def get_network_time(self):
       try:
          ntptime.settime()
+         self.time_locked = True
       except:
          self.time_locked = False
-      self.time_locked = True
       print(time.localtime())
    
    def get_local_time(self):

@@ -7,11 +7,11 @@ blink_ip_index = 0
 led_state = 0
 led = machine.Pin("LED", machine.Pin.OUT)
 led1 = machine.PWM(machine.Pin(0))
-led1.freq(1000)
+led1.freq(10000)
 led2 = machine.PWM(machine.Pin(1))
-led2.freq(1000)
+led2.freq(10000)
 led3 = machine.PWM(machine.Pin(2))
-led3.freq(1000)
+led3.freq(10000)
 led1.duty_u16(0)
 led2.duty_u16(0)
 led3.duty_u16(0)
@@ -57,10 +57,12 @@ def blink(led, active_time, inactive_time, count, blink_polarity=1):
 def led_on():
    global led_state
    led_state = 1
+   set_led()
 
 def led_off():
    global led_state
    led_state = 0
+   set_led()
 
 def get_led_state():
    global led_state
@@ -132,10 +134,6 @@ def init_led_test():
    decrease2 = 0
    decrease3 = 0
    
-   print("starting led test")
-   configure_led_duty(duty1, duty2, duty3)
-   set_led()
-   time.sleep(2)
 
 def led_test():
    global led_state
