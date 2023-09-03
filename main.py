@@ -9,8 +9,8 @@ import machine
 import led
 
 #todo
-#make blink not blocking
-#fix int vs string save data read
+#make blink not blocking (use some time info)
+#restart network if on ap mode for 10 mins
 
 picow_led = machine.Pin("LED", machine.Pin.OUT)
 
@@ -20,6 +20,7 @@ def main():
    database = save_data.save_data_class()
    wifi = picow_wifi.picow_network_class(ap_ssid="WAKELIGHT", ap_password="wakelight")
    server_socket = server.server_socket_class()
+   sched = schedule.time_class()
    device_port = 80
    max_socket_connections = 1
    # done init code
@@ -38,7 +39,8 @@ def main():
          
          if(len(database.ssid_list) > 0):
             wifi.configure_wifi(ssid=database.ssid_list.copy(), password=database.pw_list.copy(), auto_connect=False, wait_for_connect=True)
-         
+         print("Database SSID List", database.ssid_list)
+         print("Wifi SSID List", wifi.wifi_ssid_list)
          # load schedule from database to schedule file
          # load led stuff from database to led file
          
@@ -47,7 +49,7 @@ def main():
          while(wifi.check_network_connected() == False):
             print("Finding Network Connection...")
             if(len(database.ssid_list) > 0 and max_wifi_attempts > 0 and wifi.force_ap_mode is False):
-               wifi.set_network_mode(0)
+               wifi.set_network_mode(0, False)
                wifi.enable_network()
                wifi.connect_wifi()
                max_wifi_attempts = max_wifi_attempts - 1
@@ -62,8 +64,9 @@ def main():
 
          device_ip = wifi.get_ip_address()
          print(device_ip)
-         sched = schedule.time_class()
-         sched.get_network_time()
+
+         if(wifi.network_mode == 0 and wifi.check_network_connected == True):
+            sched.get_network_time()
 
          if(sched.time_locked == True):
             # load wake schedule light
@@ -74,7 +77,9 @@ def main():
             led.set_led()
          
          while (wifi.check_network_connected() == True):
-            
+            if(sched.time_locked == False):
+               if(wifi.network_mode == 0):
+                  sched.get_network_time()
             # FIX LED BLINK SO ITS NOT BLOCKING!!
 
             # led.blink_ip_addr(picow_led, device_ip)

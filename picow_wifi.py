@@ -165,6 +165,9 @@ class picow_wifi_class():
       while(self.wifi.status() < 0 and max_status_timeout > 0):
          sleep(0.1)
          max_status_timeout = max_status_timeout - 1
+      if(max_status_timeout == 0):
+         print("Wifi Enable Timed Out...")
+         return
       print("Wifi Enabled")
       sleep(1)
       self.scan_wifi()
@@ -207,6 +210,7 @@ class picow_wifi_class():
       for ssid in self.wifi_ssid_list:
          if ssid in self.wifi_scan_list:
             self.wifi_ready = True
+            print("Wifi Ready!")
             return True
       return False
    
@@ -218,11 +222,11 @@ class picow_wifi_class():
       else:
          self.scan_wifi()
          self.auto_select_ssid()
-      print("select:", self.wifi_ssid_select)
 
       if(self.wifi_ssid_select < 0 or self.wifi_ssid_select >= len(self.wifi_ssid_list)):
          return
       self.wifi_current_ssid = self.wifi_ssid_list[self.wifi_ssid_select]
+      print("Connecting to:", self.wifi_current_ssid)
       self.wifi.connect(self.wifi_ssid_list[self.wifi_ssid_select], self.wifi_pw_list[self.wifi_ssid_select])
       if(self.wifi_wait_for_connect == True):
          self.wait_for_connected()
@@ -235,6 +239,7 @@ class picow_wifi_class():
    
    def wait_for_connected(self):
       while(self.wifi_active == True and self.wifi_connected == False and self.connect_counter < self.max_connect_count):
+         print("Checking Wifi Connection...")
          self.check_wifi_connection()
          if(self.wifi_connected == False):
             self.connect_counter = self.connect_counter + 1
@@ -269,25 +274,17 @@ class picow_network_class(picow_ap_class, picow_wifi_class):
       self.configure_access_point(ssid=ap_ssid, password=ap_password)
       self.configure_wifi(ssid=wifi_ssid, password=wifi_password)
 
-   def set_network_mode(self, mode):
+   def set_network_mode(self, mode, restart=True):
       if(self.network_mode != mode):
          print("Changing network mode")
-         if(self.network_mode == 0):
-            if(self.wifi_active == True):
-               self.disable_wifi()
-         if(self.network_mode == 1):
-            if(self.ap_active == True):
-               self.disable_access_point()
-         if(mode == 0):
-            self.enable_wifi()
-         if(mode == 1):
-            self.enable_access_point()
+         if(self.check_network_connected() == True and restart == True):
+            enable = True
+         else:
+            enable = False
+         self.disable_network()
          self.network_mode = mode
-      else:
-         if(self.network_mode == 0 and self.wifi_active == False):
-            self.enable_wifi()
-         if(self.network_mode == 1 and self.ap_active == False):
-            self.enable_access_point()
+         if(enable == True):
+            self.enable_network()
 
    def check_network_connected(self):
       if(self.disconnect_on_next_check == True):
