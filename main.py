@@ -8,9 +8,11 @@ import schedule
 import machine
 import led
 
+infinite_main_loop = False
+
 #todo
 #make blink not blocking (use some time info)
-#restart network if on ap mode for 10 mins
+#restart network if on ap mode for 5 mins
 
 picow_led = machine.Pin("LED", machine.Pin.OUT)
 
@@ -259,7 +261,12 @@ if __name__ == "__main__":
    time.sleep(1)
    picow_led.off()
    try:
-      main()
-      print("Kids Wake Light Done")
+      if(infinite_main_loop == True):
+         while True:
+            main()
+            print("Kids Wake Light Done")
+      else:
+         main()
+         print("Kids Wake Light Done")
    except:
       print("Kids Wake Light Done")
