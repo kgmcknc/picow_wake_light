@@ -8,14 +8,18 @@ import schedule
 import machine
 import led
 
+#todo
+#make blink not blocking
+#fix int vs string save data read
+
 picow_led = machine.Pin("LED", machine.Pin.OUT)
 
 def main():
 
    # main, one time, initialization code
-   server_socket = server.server_socket_class()
-   wifi = picow_wifi.picow_network_class(ap_ssid="WAKELIGHT", ap_password="wakelight")
    database = save_data.save_data_class()
+   wifi = picow_wifi.picow_network_class(ap_ssid="WAKELIGHT", ap_password="wakelight")
+   server_socket = server.server_socket_class()
    device_port = 80
    max_socket_connections = 1
    # done init code
@@ -29,11 +33,11 @@ def main():
          
          led.configure_led_duty(10000, 0, 0)
          led.led_on()
-
          wifi.ap_ssid = database.ap_ssid
          wifi.ap_password = database.ap_pw
+         
          if(len(database.ssid_list) > 0):
-            wifi.configure_wifi(ssid=database.ssid_list, password=database.pw_list, auto_connect=False, wait_for_connect=True)
+            wifi.configure_wifi(ssid=database.ssid_list.copy(), password=database.pw_list.copy(), auto_connect=False, wait_for_connect=True)
          
          # load schedule from database to schedule file
          # load led stuff from database to led file
@@ -68,7 +72,7 @@ def main():
             # load last saved static led settings from database here
             led.configure_led_duty(0, 0, 10000)
             led.set_led()
-      
+         
          while (wifi.check_network_connected() == True):
             
             # FIX LED BLINK SO ITS NOT BLOCKING!!
@@ -89,7 +93,8 @@ def main():
 
          # end of network connected while loop
          sync_save_file(database, wifi)
-         print("restarting network")
+         print("Restarting Network")
+         time.sleep(3)
          main_cleanup(server_socket, wifi)
       # end of while True
    except KeyboardInterrupt:
@@ -112,13 +117,14 @@ def sync_save_file(database: save_data.save_data_class, wifi: picow_wifi.picow_n
       database.ap_pw = wifi.ap_password
       file_changed = True
    if(database.ssid_list != wifi.wifi_ssid_list):
-      database.ssid_list = wifi.wifi_ssid_list
+      database.ssid_list = wifi.wifi_ssid_list.copy()
       file_changed = True
    if(database.pw_list != wifi.wifi_pw_list):
-      database.pw_list = wifi.wifi_pw_list
+      database.pw_list = wifi.wifi_pw_list.copy()
       file_changed = True
    
    if(file_changed == True):
+      print("save file changed")
       save_data.class_data_updated = True
       database.sync_file()
 
@@ -208,14 +214,24 @@ def process_post_request(request, wifi: picow_wifi.picow_network_class):
       wifi.add_ssid(new_ssid, new_password)
       response['add_wifi_ssid'] = "success"
    if "remove_wifi_ssid" in post_data:
-      rem_ssid = post_data["rem_wifi_ssid"]
+      print("removing wifi ssid")
+      rem_ssid = post_data["remove_wifi_ssid"]
       wifi.remove_ssid(rem_ssid)
+      if(wifi.network_mode == 0):
+         if(wifi.check_network_connected() == True):
+            if(rem_ssid == wifi.wifi_current_ssid):
+               wifi.disconnect_on_next_check = True
       response['remove_wifi_ssid'] = "success"
    if "set_ap_ssid" in post_data:
       new_ssid = post_data["set_ap_ssid"]["ssid"]
       new_password = post_data["set_ap_ssid"]["password"]
-      wifi.set_ap_ssid(new_ssid, new_password)
-      response['set_ap_ssid'] = "success"
+      if(wifi.set_ap_ssid(new_ssid, new_password)):
+         if(wifi.network_mode == 1):
+            if(wifi.check_network_connected() == True):
+               wifi.disconnect_on_next_check = True
+         response['set_ap_ssid'] = "success"
+      else:
+         response['set_ap_ssid'] = "false"
    if "clear_ap_ssid" in post_data:
       rem_ssid = post_data["clear_ap_ssid"]
       wifi.clear_ap_ssid()
@@ -226,7 +242,7 @@ def process_post_request(request, wifi: picow_wifi.picow_network_class):
 
    return json.dumps(response)
 
-def main_cleanup(server_socket, wifi):
+def main_cleanup(server_socket: server.server_socket_class, wifi: picow_wifi.picow_network_class):
    server_socket.destroy_socket()
    wifi.disable_network()
    led.led_off()

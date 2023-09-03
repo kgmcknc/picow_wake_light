@@ -1,7 +1,5 @@
 import socket
 import select
-import time
-import webpage
 
 class server_socket_class:
    created = 0
@@ -9,12 +7,13 @@ class server_socket_class:
 
    def __init__(self):
       self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-   
+      
    def create_socket(self, device_ip = None, device_port = 80, max_connections = 1):
       if(device_ip != None):
          if(self.created == 0):
             try:
                #self.server_socket.setblocking(False)
+               self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
                self.server_socket.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
                self.server_socket.bind((device_ip, device_port))
                self.server_socket.listen(max_connections)
@@ -92,7 +91,6 @@ class server_socket_class:
 
    def close_connection(self):
       if(self.connected == 1):
-         #print("connection closed")
          self.connection.close()
          self.connected = 0
 
@@ -100,5 +98,4 @@ class server_socket_class:
       self.close_connection()
       if(self.created == 1):
          self.created = 0
-         print("socket destroyed")
          self.server_socket.close()

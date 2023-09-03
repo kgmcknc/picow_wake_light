@@ -1,6 +1,13 @@
+import json
+
 save_file_name = "./save_file.txt"
 class_data_updated = False
 save_fp = 0
+
+class led():
+   red = 0
+   green = 0
+   blue = 0
 
 class save_data_class():
    ap_ssid = ''
@@ -8,6 +15,10 @@ class save_data_class():
    ssid_list = []
    pw_list = []
    ip_list = []
+   hour_offset = 0
+   # fixed_led = led()
+   # wake_led = led()
+   # sleep_led = led()
    led_red = 0
    led_green = 0
    led_blue = 0
@@ -17,7 +28,6 @@ class save_data_class():
    sleep_red = 0
    sleep_green = 0
    sleep_blue = 0
-   hour_offset = 0
    wakesunday = []
    wakemonday = []
    waketuesday = []
@@ -57,17 +67,14 @@ class save_data_class():
       file_lines = file_data.splitlines()
       class_vars = self.get_class_var_list()
       for line in file_lines:
-         item = line.split(":", 1)
-         if(item[0] in class_vars):
-            if(len(item) > 1 and len(item[1]) > 0):
-               if(item[1][0] == '['):
-                  if(item[1] == '[]'):
-                     list_data = []
-                  else:
-                     list_data = item[1].strip('][').split(',')
-                  setattr(self, item[0], list_data)
-               else:
-                  setattr(self, item[0], int(item[1]))
+         line_data = json.loads(line)
+         key_list = list(line_data.keys())
+         key = key_list[0]
+         if key in class_vars:
+            value = line_data.get(key)
+            setattr(self, key, value)
+         else:
+            print("Unknown File Key:", key)
       new_list = self.save_class_to_text_list()
       if(file_lines != new_list):
          print("save file doesn't match class...rewriting save file")
@@ -77,11 +84,9 @@ class save_data_class():
       text_list = []
       class_vars = self.get_class_var_list()
       for class_var in class_vars:
-         data = getattr(self, class_var)
-         # if(data == ''):
-         #    data = '\'\''
-         new_line = f"""{class_var}:{data}"""
-         text_list.append(new_line)
+         new_dict = {class_var: getattr(self, class_var)}
+         json_var = json.dumps(new_dict)
+         text_list.append(json_var)
       return text_list
 
    def initialize_save_file(self):
@@ -97,7 +102,6 @@ class save_data_class():
 
    def rewrite_save_file(self):
       global save_fp
-
       save_fp = open(save_file_name, "w")
       text_list = self.save_class_to_text_list()
       new_text = "\n".join(text_list)
