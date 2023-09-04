@@ -21,22 +21,25 @@ class wake_times_class():
       self.wake_friday = []
       self.wake_saturday = []
    
+   def check_wake_time(self, day, current_time):
+      pass
+   
    def get_day_from_string(self, day_string):
       pass
 
-   def set_wake_time(self, day, time):
+   def set_wake_time(self, day, wake_time):
       pass
 
-   def clear_wake_time(self, day):
+   def clear_wake_times(self, day):
       pass
 
-   def add_wake_time(self, day, time):
+   def add_wake_time(self, day, wake_time):
       pass
 
-   def remove_wake_time(self, day, time):
+   def remove_wake_time(self, day, wake_time):
       pass
 
-   def reorder_wake_time(self, day, time):
+   def reorder_wake_time(self, day):
       pass
 
 class time_class():
@@ -71,6 +74,24 @@ class time_class():
          print("Unlocked Time:", time.localtime())
       current_time = time.localtime()
       last_second_check = current_time[5]
+
+   def get_weekday(self):
+      current_time = time.localtime()
+      day_num = current_time[6]
+      if(day_num == 0):
+         return "Monday"
+      if(day_num == 1):
+         return "Tuesday"
+      if(day_num == 2):
+         return "Wednesday"
+      if(day_num == 3):
+         return "Thursday"
+      if(day_num == 4):
+         return "Friday"
+      if(day_num == 5):
+         return "Saturday"
+      if(day_num == 6):
+         return "Sunday"
    
    def get_local_time(self):
       time.localtime()

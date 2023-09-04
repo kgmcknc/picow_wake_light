@@ -1,6 +1,7 @@
 import machine
 import time
 
+led_mode = 0
 saved_ip = ""
 blink_index = 0
 blink_list = []
