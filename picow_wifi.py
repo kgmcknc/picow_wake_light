@@ -183,12 +183,14 @@ class picow_wifi_class():
          self.wifi.active(False)
    
    def scan_wifi(self):
+      print("Starting Wifi Scan...")
       if(self.wifi_active == True):
          scan_list = self.wifi.scan()
          ssids = []
          for item in scan_list:
             ssids.append(item[0].decode())
          self.wifi_scan_list = ssids.copy()
+      print(self.wifi_scan_list)
 
    def auto_select_ssid(self):
       # NEED TO MAKE WIFI_CONNECT_ATTEMPT_LIST so we can loop through all available wifi instead of always selecting first one we find
@@ -230,6 +232,8 @@ class picow_wifi_class():
       self.wifi.connect(self.wifi_ssid_list[self.wifi_ssid_select], self.wifi_pw_list[self.wifi_ssid_select])
       if(self.wifi_wait_for_connect == True):
          self.wait_for_connected()
+         if(self.wifi_connected == False):
+            self.disable_wifi()
 
    def disconnect_wifi(self):
       if(self.wifi_connected == True):
@@ -238,6 +242,7 @@ class picow_wifi_class():
          self.wifi.disconnect()
    
    def wait_for_connected(self):
+      self.connect_counter = 0
       while(self.wifi_active == True and self.wifi_connected == False and self.connect_counter < self.max_connect_count):
          print("Checking Wifi Connection...")
          self.check_wifi_connection()

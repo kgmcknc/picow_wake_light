@@ -2,7 +2,8 @@ import machine
 import time
 
 saved_ip = ""
-blink_ip_index = 0
+blink_index = 0
+blink_list = []
 
 led_state = 0
 led = machine.Pin("LED", machine.Pin.OUT)
@@ -19,23 +20,68 @@ duty1 = 0
 duty2 = 0
 duty3 = 0
 
+led_timer = machine.Timer()
+led_is_on = False
+timer_active = False
+blink_count = 0
+
+def init_blink_ip_addr():
+   global saved_ip
+   saved_ip = ""
+
 def blink_ip_addr(led, ip_addr):
    global saved_ip
-   global blink_ip_index
+   global blink_index
+   global blink_list
+   global timer_active
+   global led_is_on
+   global blink_count
+   global led_timer
 
    if(ip_addr != saved_ip):
       saved_ip = ip_addr
-      blink_ip_index = 0
+      blink_index = 0
+      blink_count = 0
+      blink_list = []
+      led_is_on = False
+      led.off()
+      led_timer.deinit()
+      timer_active = False
+      for item in saved_ip:
+         if(item == '.'):
+            blink_tuple = (2, 1, 1)
+         else:
+            blink_tuple = (0.5, 0.5, int(item))
+         blink_list.append(blink_tuple)
    
-   if(saved_ip[blink_ip_index] == '.'):
-      blink(led, 2, 1, 1)
-   else:
-      blink(led, 0.5, 0.5, int(saved_ip[blink_ip_index]))
+   if(timer_active == False):
+      timer_active = True
+      if(led_is_on == True):
+         led.off()
+         led_is_on = False
+         blink_count = blink_count + 1
+         wait_time = blink_list[blink_index][1]
+         if(blink_count >= blink_list[blink_index][2]):
+            wait_time = wait_time + 1
+            blink_count = 0
+            blink_index = blink_index + 1
+            if(blink_index >= len(blink_list)):
+               wait_time = wait_time + 2
+               blink_index = 0
+         set_led_timer(wait_time)
+      else:
+         led.on()
+         led_is_on = True
+         set_led_timer(blink_list[blink_index][0])
+   
+def set_led_timer(wait_time):
+   global led_timer
+   timer_period = int(wait_time*1000)
+   led_timer.init(mode=machine.Timer.ONE_SHOT, period=timer_period, callback=led_timer_done)
 
-   blink_ip_index = blink_ip_index + 1
-   if(blink_ip_index >= len(saved_ip)):
-      blink_ip_index = 0
-   time.sleep(1)
+def led_timer_done(timer):
+   global timer_active
+   timer_active = False
 
 def blink(led, active_time, inactive_time, count, blink_polarity=1):
    blink_count = 0

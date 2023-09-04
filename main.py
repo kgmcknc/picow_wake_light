@@ -11,13 +11,14 @@ import led
 infinite_main_loop = False
 
 #todo
-#make blink not blocking (use some time info)
+#do hour offset adjustment in time stuff
+#do led schedule stuff and wake window ranges
 #restart network if on ap mode for 5 mins
+#re-lock time every hour?
 
 picow_led = machine.Pin("LED", machine.Pin.OUT)
 
 def main():
-
    # main, one time, initialization code
    database = save_data.save_data_class()
    wifi = picow_wifi.picow_network_class(ap_ssid="WAKELIGHT", ap_password="wakelight")
@@ -25,6 +26,8 @@ def main():
    sched = schedule.time_class()
    device_port = 80
    max_socket_connections = 1
+
+   led.init_blink_ip_addr()
    # done init code
    
    print("Kids Wake To Sleep Light")
@@ -43,6 +46,8 @@ def main():
             wifi.configure_wifi(ssid=database.ssid_list.copy(), password=database.pw_list.copy(), auto_connect=False, wait_for_connect=True)
          print("Database SSID List", database.ssid_list)
          print("Wifi SSID List", wifi.wifi_ssid_list)
+
+         copy_wake_schedule(database, sched)
          # load schedule from database to schedule file
          # load led stuff from database to led file
          
@@ -69,22 +74,16 @@ def main():
 
          if(wifi.network_mode == 0 and wifi.check_network_connected == True):
             sched.get_network_time()
-
-         if(sched.time_locked == True):
-            # load wake schedule light
-            pass
-         else:
-            # load last saved static led settings from database here
-            led.configure_led_duty(0, 0, 10000)
-            led.set_led()
          
+         print("Starting Main Network Connected While Loop")
          while (wifi.check_network_connected() == True):
             if(sched.time_locked == False):
                if(wifi.network_mode == 0):
                   sched.get_network_time()
-            # FIX LED BLINK SO ITS NOT BLOCKING!!
+            
+            led.blink_ip_addr(picow_led, device_ip)
 
-            # led.blink_ip_addr(picow_led, device_ip)
+            check_wake_led(sched)
             
             server_socket.create_socket(device_ip, device_port, max_socket_connections)
             read_ready = server_socket.check_read_ready()
@@ -95,11 +94,10 @@ def main():
                except:
                   response_data = None
                send_response(server_socket, response_data)
-            #led.update_led()
-            sync_save_file(database, wifi)
+            sync_save_file(database, wifi, sched)
 
          # end of network connected while loop
-         sync_save_file(database, wifi)
+         sync_save_file(database, wifi, sched)
          print("Restarting Network")
          time.sleep(3)
          main_cleanup(server_socket, wifi)
@@ -115,7 +113,16 @@ def main():
       print("Kids Wake Light Done")
       machine.reset()
 
-def sync_save_file(database: save_data.save_data_class, wifi: picow_wifi.picow_network_class):
+def copy_wake_schedule(database: save_data.save_data_class, sched: schedule.wake_times_class):
+   sched.wake_sunday = database.wake_sunday.copy()
+   sched.wake_monday = database.wake_monday.copy()
+   sched.wake_tuesday = database.wake_tuesday.copy()
+   sched.wake_wednesday = database.wake_wednesday.copy()
+   sched.wake_thursday = database.wake_thursday.copy()
+   sched.wake_friday = database.wake_friday.copy()
+   sched.wake_saturday = database.wake_saturday.copy()
+
+def sync_save_file(database: save_data.save_data_class, wifi: picow_wifi.picow_network_class, sched: schedule.wake_times_class):
    file_changed = False
    if(database.ap_ssid != wifi.ap_ssid):
       database.ap_ssid = wifi.ap_ssid
@@ -129,11 +136,41 @@ def sync_save_file(database: save_data.save_data_class, wifi: picow_wifi.picow_n
    if(database.pw_list != wifi.wifi_pw_list):
       database.pw_list = wifi.wifi_pw_list.copy()
       file_changed = True
+   if(database.wake_sunday != sched.wake_sunday):
+      database.wake_sunday = sched.wake_sunday.copy()
+      file_changed = True
+   if(database.wake_monday != sched.wake_monday):
+      database.wake_monday = sched.wake_monday.copy()
+      file_changed = True
+   if(database.wake_tuesday != sched.wake_tuesday):
+      database.wake_tuesday = sched.wake_tuesday.copy()
+      file_changed = True
+   if(database.wake_wednesday != sched.wake_wednesday):
+      database.wake_wednesday = sched.wake_wednesday.copy()
+      file_changed = True
+   if(database.wake_thursday != sched.wake_thursday):
+      database.wake_thursday = sched.wake_thursday.copy()
+      file_changed = True
+   if(database.wake_friday != sched.wake_friday):
+      database.wake_friday = sched.wake_friday.copy()
+      file_changed = True
+   if(database.wake_saturday != sched.wake_saturday):
+      database.wake_saturday = sched.wake_saturday.copy()
+      file_changed = True
    
    if(file_changed == True):
       print("save file changed")
       save_data.class_data_updated = True
       database.sync_file()
+
+def check_wake_led(sched):
+   if(sched.time_locked == True):
+      # load wake schedule light
+      pass
+   else:
+      # load last saved static led settings from database here
+      led.configure_led_duty(0, 0, 10000)
+      led.set_led()
 
 def process_socket_read(read_data, wifi):
    response_data = None

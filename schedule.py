@@ -3,6 +3,42 @@ import ntptime
 
 last_second_check = 0
 
+class wake_times_class():
+   wake_sunday = []
+   wake_monday = []
+   wake_tuesday = []
+   wake_wednesday = []
+   wake_thursday = []
+   wake_friday = []
+   wake_saturday = []
+
+   def __init__(self):
+      self.wake_sunday = []
+      self.wake_monday = []
+      self.wake_tuesday = []
+      self.wake_wednesday = []
+      self.wake_thursday = []
+      self.wake_friday = []
+      self.wake_saturday = []
+   
+   def get_day_from_string(self, day_string):
+      pass
+
+   def set_wake_time(self, day, time):
+      pass
+
+   def clear_wake_time(self, day):
+      pass
+
+   def add_wake_time(self, day, time):
+      pass
+
+   def remove_wake_time(self, day, time):
+      pass
+
+   def reorder_wake_time(self, day, time):
+      pass
+
 class time_class():
    time_locked = False
    hour_offset = 0
@@ -11,8 +47,10 @@ class time_class():
       if(hour_offset != None):
          self.hour_offset = hour_offset
          if(ntptime.host == None):
+            print("Fixing ntp time host")
             ntptime.host = 'pool.ntp.org'
          if(ntptime.timeout != 1):
+            print("Fixing ntp timeout")
             ntptime.timeout = 1
 
    def get_network_time(self):

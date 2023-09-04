@@ -16,9 +16,7 @@ class save_data_class():
    pw_list = []
    ip_list = []
    hour_offset = 0
-   # fixed_led = led()
-   # wake_led = led()
-   # sleep_led = led()
+   led_mode = 0
    led_red = 0
    led_green = 0
    led_blue = 0
@@ -28,13 +26,13 @@ class save_data_class():
    sleep_red = 0
    sleep_green = 0
    sleep_blue = 0
-   wakesunday = []
-   wakemonday = []
-   waketuesday = []
-   wakewednesday = []
-   wakethursday = []
-   wakefriday = []
-   wakesaturday = []
+   wake_sunday = []
+   wake_monday = []
+   wake_tuesday = []
+   wake_wednesday = []
+   wake_thursday = []
+   wake_friday = []
+   wake_saturday = []
    
    def __init__(self):
       self.init_class_from_save_file()
