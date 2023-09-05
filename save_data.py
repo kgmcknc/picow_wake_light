@@ -26,13 +26,13 @@ class save_data_class():
    sleep_red = 0
    sleep_green = 0
    sleep_blue = 0
-   wake_sunday = []
    wake_monday = []
    wake_tuesday = []
    wake_wednesday = []
    wake_thursday = []
    wake_friday = []
    wake_saturday = []
+   wake_sunday = []
    
    def __init__(self):
       self.init_class_from_save_file()

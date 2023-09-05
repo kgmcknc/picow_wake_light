@@ -11,10 +11,12 @@ import led
 infinite_main_loop = False
 
 #todo
-#do hour offset adjustment in time stuff
-#do led schedule stuff and wake window ranges
-#restart network if on ap mode for 5 mins
-#re-lock time every hour?
+# finish remove_wake_time function
+# do reorder wake time function
+# do hour offset adjustment in time stuff
+# do led schedule stuff and wake window ranges
+# restart network if on ap mode for 5 mins
+# re-lock time every hour?
 
 picow_led = machine.Pin("LED", machine.Pin.OUT)
 
@@ -51,6 +53,7 @@ def main():
          copy_wake_schedule(database, wake_times)
          # load schedule from database to schedule file
          # load led stuff from database to led file
+         led.led_mode = database.led_mode
          
          print("Starting Web Check")
          max_wifi_attempts = 3
