@@ -85,7 +85,7 @@ class server_socket_class:
    def write_data(self, data):
       if(self.connected == 1):
          try:
-            self.connection.write(data)
+            self.connection.sendall(data)
          except:
             print("error writing")
 

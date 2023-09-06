@@ -94,7 +94,7 @@ def main():
             if(read_ready == True):
                read_data = server_socket.read_data(1024)
                try:
-                  response_data = process_socket_read(read_data, wifi)
+                  response_data = process_socket_read(read_data, wifi, wake_times)
                except:
                   response_data = None
                send_response(server_socket, response_data)
@@ -125,6 +125,14 @@ def copy_wake_schedule(database: save_data.save_data_class, sched: schedule.wake
    sched.wake_thursday = database.wake_thursday.copy()
    sched.wake_friday = database.wake_friday.copy()
    sched.wake_saturday = database.wake_saturday.copy()
+
+   print(sched.wake_sunday)
+   print(sched.wake_monday)
+   print(sched.wake_tuesday)
+   print(sched.wake_wednesday)
+   print(sched.wake_thursday)
+   print(sched.wake_friday)
+   print(sched.wake_saturday)
 
 def sync_save_file(database: save_data.save_data_class, wifi: picow_wifi.picow_network_class, sched: schedule.wake_times_class):
    file_changed = False
@@ -184,7 +192,7 @@ def check_wake_led(sched: schedule.time_class, wake_times: schedule.wake_times_c
       led.configure_led_duty(0, 0, 10000)
       led.set_led()
 
-def process_socket_read(read_data, wifi):
+def process_socket_read(read_data, wifi, wake_times):
    response_data = None
    process_data = webpage.process_read_data(read_data)
    if(process_data == None):
@@ -195,10 +203,10 @@ def process_socket_read(read_data, wifi):
       else:
          response_data = process_get_request(process_data[1], wifi)
    if(process_data[0] == 'POST'):
-      response_data = process_post_request(process_data[1], wifi)
+      response_data = process_post_request(process_data[1], wifi, wake_times)
    return response_data
    
-def send_response(server_socket, response):
+def send_response(server_socket: server.server_socket_class, response):
    if(response == None):
       response_data = webpage.create_empty_response()
    else:
@@ -232,7 +240,7 @@ def process_get_request(request, wifi: picow_wifi.picow_network_class):
       response['get_ap_ssid'] = wifi.ap_ssid
    return json.dumps(response)
 
-def process_post_request(request, wifi: picow_wifi.picow_network_class):
+def process_post_request(request, wifi: picow_wifi.picow_network_class, wake_times: schedule.wake_times_class):
    response = dict()
    try:
       post_data = json.loads(request)
@@ -295,6 +303,17 @@ def process_post_request(request, wifi: picow_wifi.picow_network_class):
    if "restart_network" in post_data:
       wifi.disconnect_on_next_check = True
       response['restart_network'] = "success"
+   if "add_wake_time" in post_data:
+      day = post_data["add_wake_time"]["day"]
+      time = post_data["add_wake_time"]["time"]
+      wake_time_list = [time]
+      wake_times.add_wake_time(day, wake_time_list)
+      response['add_wake_time'] = "success"
+      print(wake_times.wake_sunday)
+   if "clear_wake_times" in post_data:
+      day = post_data["clear_wake_times"]
+      wake_times.clear_wake_times(day)
+      response['clear_wake_times'] = "success"
 
    return json.dumps(response)
 

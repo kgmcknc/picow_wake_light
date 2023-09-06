@@ -28,12 +28,11 @@ class wake_times_class():
       if(day_list == None):
          return
       for wake_item in day_list:
-         times = wake_item.split(":")
-         start_time = tuple(times[0])
-         end_time = tuple(times[1])
-         start_time_decimal = start_time[0] + (start_time[1]/100)
-         end_time_decimal = end_time[0] + (end_time[1]/100)
-         current_time_decimal = current_time[0] + (current_time[1]/100)
+         start_time = wake_item["start_time"]
+         end_time = wake_item["end_time"]
+         start_time_decimal = int(start_time[0]) + (int(start_time[1])/100)
+         end_time_decimal = int(end_time[0]) + (int(end_time[1])/100)
+         current_time_decimal = int(current_time[0]) + (int(current_time[1])/100)
          if(current_time_decimal >= start_time_decimal):
             if(current_time_decimal <= end_time_decimal):
                self.wake_time = True
@@ -43,19 +42,19 @@ class wake_times_class():
    
    def get_day_list(self, day):
       if(isinstance(day, str)):
-         if(day == "Monday"):
+         if(day.lower() == "monday"):
             return self.wake_monday
-         if(day == "Tuesday"):
+         if(day.lower() == "tuesday"):
             return self.wake_tuesday
-         if(day == "Wednesday"):
+         if(day.lower() == "wednesday"):
             return self.wake_wednesday
-         if(day == "Thursday"):
+         if(day.lower() == "thursday"):
             return self.wake_thursday
-         if(day == "Friday"):
+         if(day.lower() == "friday"):
             return self.wake_friday
-         if(day == "Saturday"):
+         if(day.lower() == "saturday"):
             return self.wake_saturday
-         if(day == "Sunday"):
+         if(day.lower() == "sunday"):
             return self.wake_sunday
       else:
          if(day == 0):
@@ -98,15 +97,13 @@ class wake_times_class():
          return
       day_list_copy = day_list.copy()
       self.clear_wake_times(day)
-      rem_times = wake_time.split(":")
-      rem_start_time = tuple(rem_times[0])
-      rem_end_time = tuple(rem_times[1])
+      rem_start_time = wake_time["start_time"]
+      rem_end_time = wake_time["end_time"]
       rem_start_time_decimal = rem_start_time[0] + (rem_start_time[1]/100)
       rem_end_time_decimal = rem_end_time[0] + (rem_end_time[1]/100)
       for wake_item in day_list:
-         times = wake_item.split(":")
-         start_time = tuple(times[0])
-         end_time = tuple(times[1])
+         start_time = wake_item["start_time"]
+         end_time = wake_item["end_time"]
          start_time_decimal = start_time[0] + (start_time[1]/100)
          end_time_decimal = end_time[0] + (end_time[1]/100)
 
@@ -114,31 +111,23 @@ class wake_times_class():
             if(end_time_decimal <= rem_end_time_decimal):
                continue
             else:
-               wake_time = rem_times[1]+":"+times[1]
+               wake_time["start_time"] = rem_end_time
+               wake_time["end_time"] = end_time
          else:
             if(end_time_decimal <= rem_end_time_decimal):
-               wake_time = times[0]+":"+rem_times[0]
+               wake_time["start_time"] = start_time
+               wake_time["end_time"] = rem_start_time
             else:
-               wake_time = times[0]+":"+rem_times[0]
+               wake_time["start_time"] = start_time
+               wake_time["end_time"] = rem_start_time
                day_list_copy.append(wake_item)
-               wake_time = rem_times[1]+":"+times[1]
+               wake_time["start_time"] = rem_end_time
+               wake_time["end_time"] = end_time
       self.add_wake_time(day, day_list_copy)
    
-   def add_time_tuple(self, time_tuple):
-      hours = time_tuple(0)
-      mins = time_tuple(1)
-      mins = mins + 1
-      if(mins >= 60):
-         mins = 0
-         hours = hours + 1
-      if(hours == 24):
-         hours = 23
-         mins = 59
-      return (hours, mins)
-
    def reorder_wake_time(self, day):
-      #get day
-      #iterate through day list and split with ":" getting start and end numbers
+      # get day
+      # iterate through day list and split with ":" getting start and end numbers
       # add all start numbers to a "Start" list and add all end numbers to an "end" list
       # iterate through the start and end list and create new ranges encompasing all the values
       pass

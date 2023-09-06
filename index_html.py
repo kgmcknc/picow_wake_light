@@ -32,6 +32,23 @@ def get_index_html():
             <br>
             <button onclick="restart_network()">Restart Network</button>
             <br>
+            <select name="weekday" id="weekday">
+            <option value="sunday">Sunday</option>
+            <option value="monday">Monday</option>
+            <option value="tuesday">Tuesday</option>
+            <option value="wednesday">Wednesday</option>
+            <option value="thursday">Thursday</option>
+            <option value="friday">Friday</option>
+            <option value="saturday">Saturday</option>
+            </select>
+            <br>
+            Start Hour: <input type="number" id="start_hour" name="starthour" min="0" max="23" value="0">
+            Start Min: <input type="number" id="start_min" name="startmin" min="0" max="59" value="0">
+            End Hour: <input type="number" id="end_hour" name="endhour" min="0" max="23" value="0">
+            End Min: <input type="number" id="end_min" name="endmin" min="0" max="59" value="0">
+            <br>
+            <button onclick="add_wake_time()">Add Wake Time</button>
+            <button onclick="clear_wake_times()">Clear Wake Times</button>
          </body>
          <script>
             function add_network(){
@@ -82,6 +99,23 @@ def get_index_html():
             function get_duty(){
                var send_data = {"led_duty":""}
                send_xmlhttp_get(send_data, alert_response)
+            }
+            function add_wake_time(){
+               var day = document.getElementById("weekday").value
+               var start_hour = document.getElementById("start_hour").value
+               var start_min = document.getElementById("start_min").value
+               var end_hour = document.getElementById("end_hour").value
+               var end_min = document.getElementById("end_min").value
+               var start_time = [start_hour, start_min]
+               var end_time = [end_hour, end_min]
+               var time_string = "[("+start_hour+","+start_min+"):("+end_hour+","+end_min+")]"
+               var send_data = {"add_wake_time": {"day":day, "time":{"start_time":start_time,"end_time":end_time}}}
+               send_xmlhttp_post(send_data)
+            }
+            function clear_wake_times(){
+               var day = document.getElementById("weekday").value
+               var send_data = {"clear_wake_times": day}
+               send_xmlhttp_post(send_data)
             }
             function send_get(get_data, callback_function){
                send_xmlhttp_get(get_data, callback_function)
