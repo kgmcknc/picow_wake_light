@@ -126,14 +126,6 @@ def copy_wake_schedule(database: save_data.save_data_class, sched: schedule.wake
    sched.wake_friday = database.wake_friday.copy()
    sched.wake_saturday = database.wake_saturday.copy()
 
-   print(sched.wake_sunday)
-   print(sched.wake_monday)
-   print(sched.wake_tuesday)
-   print(sched.wake_wednesday)
-   print(sched.wake_thursday)
-   print(sched.wake_friday)
-   print(sched.wake_saturday)
-
 def sync_save_file(database: save_data.save_data_class, wifi: picow_wifi.picow_network_class, sched: schedule.wake_times_class):
    file_changed = False
    if(database.ap_ssid != wifi.ap_ssid):
@@ -309,7 +301,6 @@ def process_post_request(request, wifi: picow_wifi.picow_network_class, wake_tim
       wake_time_list = [time]
       wake_times.add_wake_time(day, wake_time_list)
       response['add_wake_time'] = "success"
-      print(wake_times.wake_sunday)
    if "clear_wake_times" in post_data:
       day = post_data["clear_wake_times"]
       wake_times.clear_wake_times(day)
