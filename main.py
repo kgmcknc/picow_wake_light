@@ -170,10 +170,15 @@ def sync_save_file(database: save_data.save_data_class, wifi: picow_wifi.picow_n
       save_data.class_data_updated = True
       database.sync_file()
 
-def check_wake_led(sched: schedule.time_class, wake_times):
+def check_wake_led(sched: schedule.time_class, wake_times: schedule.wake_times_class):
    if(sched.time_locked == True):
-      # load wake schedule light
-      pass
+      current_time = sched.get_local_time()
+      current_day = sched.get_weekday()
+      if(wake_times.check_wake_time(current_day, current_time)):
+         led.configure_led_duty(0, 10000, 0)
+      else:
+         led.configure_led_duty(0, 0, 10000)
+      led.set_led()
    else:
       # load last saved static led settings from database here
       led.configure_led_duty(0, 0, 10000)

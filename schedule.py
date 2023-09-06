@@ -1,5 +1,4 @@
 import time
-import datetime
 import ntptime
 
 last_second_check = 0
@@ -32,8 +31,11 @@ class wake_times_class():
          times = wake_item.split(":")
          start_time = tuple(times[0])
          end_time = tuple(times[1])
-         if(current_time[0] >= start_time[0] and current_time[1] >= start_time[1]):
-            if(current_time[0] <= end_time[0] and current_time[1] <= end_time[1]):
+         start_time_decimal = start_time[0] + (start_time[1]/100)
+         end_time_decimal = end_time[0] + (end_time[1]/100)
+         current_time_decimal = current_time[0] + (current_time[1]/100)
+         if(current_time_decimal >= start_time_decimal):
+            if(current_time_decimal <= end_time_decimal):
                self.wake_time = True
                return True
       self.wake_time = False
@@ -99,25 +101,28 @@ class wake_times_class():
       rem_times = wake_time.split(":")
       rem_start_time = tuple(rem_times[0])
       rem_end_time = tuple(rem_times[1])
+      rem_start_time_decimal = rem_start_time[0] + (rem_start_time[1]/100)
+      rem_end_time_decimal = rem_end_time[0] + (rem_end_time[1]/100)
       for wake_item in day_list:
-         if(wake_item == wake_time):
-            # don't add item to be removed to the new list
-            continue
-
-         # NEED TO FINISH THIS!!
          times = wake_item.split(":")
          start_time = tuple(times[0])
          end_time = tuple(times[1])
-         if(rem_start_time == start_time):
-            pass
-         if(rem_start_time[0] >= start_time[0] and rem_start_time[1] >= start_time[1]):
-            if(rem_end_time[0] <= end_time[0] and rem_end_time[1] <= end_time[1]):
-               # this will be two new list items
-               pass
+         start_time_decimal = start_time[0] + (start_time[1]/100)
+         end_time_decimal = end_time[0] + (end_time[1]/100)
+
+         if(start_time_decimal >= rem_start_time_decimal):
+            if(end_time_decimal <= rem_end_time_decimal):
+               continue
             else:
-               day_list_copy.append(wake_item)
+               wake_time = rem_times[1]+":"+times[1]
          else:
-            day_list_copy.append(wake_item)
+            if(end_time_decimal <= rem_end_time_decimal):
+               wake_time = times[0]+":"+rem_times[0]
+            else:
+               wake_time = times[0]+":"+rem_times[0]
+               day_list_copy.append(wake_item)
+               wake_time = rem_times[1]+":"+times[1]
+      self.add_wake_time(day, day_list_copy)
    
    def add_time_tuple(self, time_tuple):
       hours = time_tuple(0)
@@ -190,5 +195,6 @@ class time_class():
          return "Sunday"
    
    def get_local_time(self):
-      time.localtime()
+      current_time = time.localtime()
+      return (current_time[3], current_time[4])
       # convert hour/day as needed
