@@ -40,8 +40,7 @@ def main():
       while True:
          device_ip = ""
          
-         led.configure_led_duty(10000, 0, 0)
-         led.led_on()
+         led.set_led(10000, 0, 0)
          wifi.ap_ssid = database.ap_ssid
          wifi.ap_password = database.ap_pw
          
@@ -52,7 +51,9 @@ def main():
 
          copy_wake_schedule(database, wake_times)
          # load schedule from database to schedule file
-         # load led stuff from database to led file
+         led.wake_led = database.wake_led.copy()
+         led.sleep_led = database.sleep_led.copy()
+         led.const_led = database.const_led.copy()
          led.led_mode = database.led_mode
          
          print("Starting Web Check")
@@ -164,6 +165,15 @@ def sync_save_file(database: save_data.save_data_class, wifi: picow_wifi.picow_n
    if(database.led_mode != led.led_mode):
       database.led_mode = led.led_mode
       file_changed = True
+   if(database.wake_led != led.wake_led):
+      database.wake_led = led.wake_led.copy()
+      file_changed = True
+   if(database.sleep_led != led.sleep_led):
+      database.sleep_led = led.sleep_led.copy()
+      file_changed = True
+   if(database.const_led != led.const_led):
+      database.const_led = led.const_led.copy()
+      file_changed = True
 
    if(file_changed == True):
       print("save file changed")
@@ -171,18 +181,25 @@ def sync_save_file(database: save_data.save_data_class, wifi: picow_wifi.picow_n
       database.sync_file()
 
 def check_wake_led(sched: schedule.time_class, wake_times: schedule.wake_times_class):
-   if(sched.time_locked == True):
-      current_time = sched.get_local_time()
-      current_day = sched.get_weekday()
-      if(wake_times.check_wake_time(current_day, current_time)):
-         led.configure_led_duty(0, 10000, 0)
+   if(led.led_mode == 0):
+      if(sched.time_locked == True):
+         current_time = sched.get_local_time()
+         current_day = sched.get_weekday()
+         if(wake_times.check_wake_time(current_day, current_time)):
+            led.led_wake()
+         else:
+            led.led_sleep()
       else:
-         led.configure_led_duty(0, 0, 10000)
-      led.set_led()
-   else:
-      # load last saved static led settings from database here
-      led.configure_led_duty(0, 0, 10000)
-      led.set_led()
+         # load last saved static led settings from database here
+         led.led_const()
+   if(led.led_mode == 1):
+      led.led_wake()
+   if(led.led_mode == 2):
+      led.led_sleep()
+   if(led.led_mode == 3):
+      led.led_const()
+   if(led.led_mode == 4):
+      led.led_off()
 
 def process_socket_read(read_data, wifi, wake_times):
    response_data = None
@@ -240,37 +257,41 @@ def process_post_request(request, wifi: picow_wifi.picow_network_class, wake_tim
    except:
       post_data = dict()
       print("json error", request)
-   if "led_state" in post_data:
-      if(post_data['led_state'] == 'on'):
-         print('led on!')
-         led.led_on()
-         response['led_state'] = 'led_on'
-      if(post_data['led_state'] == 'off'):
-         print('led off!')
-         led.led_off()
-         response['led_state'] = 'led_off'
-   if "led_red" in post_data:
-      duty = int(post_data['led_red'])
-      if(duty >= 0 and duty <= 65535):
-         led.configure_led_duty(red_duty=duty)
-         response['led_red'] = duty
-   if "led_green" in post_data:
-      duty = int(post_data['led_green'])
-      if(duty >= 0 and duty <= 65535):
-         led.configure_led_duty(green_duty=duty)
-         response['led_green'] = duty
-   if "led_blue" in post_data:
-      duty = int(post_data['led_blue'])
-      if(duty >= 0 and duty <= 65535):
-         led.configure_led_duty(blue_duty=duty)
-         response['led_blue'] = duty
+   if "set_led_mode" in post_data:
+      response['set_led_mode'] = post_data['set_led_mode']
+      if(post_data['set_led_mode'] >= 0 and post_data['set_led_mode'] <= 4):
+         led.led_mode = post_data['set_led_mode']
+   if "set_wake_color" in post_data:
+      response['set_wake_color'] = "success"
+      led_color = post_data['set_wake_color']
+      if(isinstance(led_color, str)):
+         if(len(led_color) == 6):
+            led.wake_led["red"] = int(led_color[0:2], 16)*257
+            led.wake_led["green"] = int(led_color[2:4], 16)*257
+            led.wake_led["blue"] = int(led_color[4:6], 16)*257
+            print(led.wake_led)
+   if "set_sleep_color" in post_data:
+      response['set_sleep_color'] = "success"
+      led_color = post_data['set_sleep_color']
+      if(isinstance(led_color, str)):
+         if(len(led_color) == 6):
+            led.sleep_led["red"] = int(led_color[0:2], 16)*257
+            led.sleep_led["green"] = int(led_color[2:4], 16)*257
+            led.sleep_led["blue"] = int(led_color[4:6], 16)*257
+   if "set_const_color" in post_data:
+      response['set_wake_color'] = "success"
+      led_color = post_data['set_const_color']
+      if(isinstance(led_color, str)):
+         if(len(led_color) == 6):
+            led.const_led["red"] = int(led_color[0:2], 16)*257
+            led.const_led["green"] = int(led_color[2:4], 16)*257
+            led.const_led["blue"] = int(led_color[4:6], 16)*257
    if "add_wifi_ssid" in post_data:
       new_ssid = post_data["add_wifi_ssid"]["ssid"]
       new_password = post_data["add_wifi_ssid"]["password"]
       wifi.add_ssid(new_ssid, new_password)
       response['add_wifi_ssid'] = "success"
    if "remove_wifi_ssid" in post_data:
-      print("removing wifi ssid")
       rem_ssid = post_data["remove_wifi_ssid"]
       wifi.remove_ssid(rem_ssid)
       if(wifi.network_mode == 0):

@@ -3,35 +3,45 @@ def get_index_html():
    html_webpage = '''
       <html>
          <head>
-            <title>Kids LED Wake Light</title>
+            <title>PicoW LED Wake Light</title>
          </head>
          <body>
-            This is a test page!
+            get status of all leds from board and update the values of the colors
+            <br><br>
+            <label for="wakecolor">Select your favorite color:</label>
+            <input type="color" id="wakecolor" name="wakecolor" value="#00ff00">
+            <input type="button" value="Set Wake Color" onclick="set_wake_color()">
             <br>
-            <button onclick="send_on()">led on</button>
-            <button onclick="send_off()">led off</button>
+            <label for="sleepcolor">Select your favorite color:</label>
+            <input type="color" id="sleepcolor" name="sleepcolor" value="#0000ff">
+            <input type="button" value="Set Sleep Color" onclick="set_sleep_color()">
             <br>
-            Red: <input type="range" oninput="set_led()" onchange="set_led()" min="0" max="65535" value="30000" class="slider" id="redrange">
+            <label for="constcolor">Select your favorite color:</label>
+            <input type="color" id="constcolor" name="constcolor" value="#ff00ff">
+            <input type="button" value="Set Constant Color" onclick="set_const_color()">
             <br>
-            Green: <input type="range" oninput="set_led()" onchange="set_led()" min="0" max="65535" value="30000" class="slider" id="greenrange">
-            <br>
-            Blue: <input type="range" oninput="set_led()" onchange="set_led()" min="0" max="65535" value="30000" class="slider" id="bluerange">
-            <br>
-            <button onclick="set_led()">Set LED</button>
-            <button onclick="get_led()">Get LED</button>
-            <button onclick="get_duty()">Get DUTY</button>
-            <br>
-            ssid: <input type="text" id="ssid_text">
-            <br>
-            password: <input type="text" id="pw_text">
-            <br>
+            <input type="button" value="Resume Schedule" onclick="set_led_mode(0)">
+            <input type="button" value="Force Wake" onclick="set_led_mode(1)">
+            <input type="button" value="Force Sleep" onclick="set_led_mode(2)">
+            <input type="button" value="Force Constant" onclick="set_led_mode(3)">
+            <input type="button" value="Turn LED Off" onclick="set_led_mode(4)">
+            <br><br>
+            Get current wake status
+            Get current wake schedule
+            <br><br>
+            <label for="ssid">SSID:</label><br>
+            <input type="text" id="ssid" name="ssid"><br>
+            <label for="pwd">Password:</label><br>
+            <input type="password" id="pwd" name="pwd"><br><br>
             <button onclick="add_network()">Add Network</button>
             <button onclick="remove_network()">Remove Network</button>
             <button onclick="set_ap_ssid()">Set AP SSID</button>
             <button onclick="clear_ap_ssid()">Clear AP SSID</button>
-            <br>
             <button onclick="restart_network()">Restart Network</button>
+            <br><br>
+            Wake Time Settings:
             <br>
+            Select a day:
             <select name="weekday" id="weekday">
             <option value="sunday">Sunday</option>
             <option value="monday">Monday</option>
@@ -41,35 +51,34 @@ def get_index_html():
             <option value="friday">Friday</option>
             <option value="saturday">Saturday</option>
             </select>
-            <br>
-            Start Hour: <input type="number" id="start_hour" name="starthour" min="0" max="23" value="0">
-            Start Min: <input type="number" id="start_min" name="startmin" min="0" max="59" value="0">
-            End Hour: <input type="number" id="end_hour" name="endhour" min="0" max="23" value="0">
-            End Min: <input type="number" id="end_min" name="endmin" min="0" max="59" value="0">
+            <label for="wake_start">Start Time:</label>
+            <input type="time" id="wake_start" name="wake_start">
+            <label for="wake_end">End Time:</label>
+            <input type="time" id="wake_end" name="wake_end">
             <br>
             <button onclick="add_wake_time()">Add Wake Time</button>
             <button onclick="clear_wake_times()">Clear Wake Times</button>
          </body>
          <script>
             function add_network(){
-               new_ssid = document.getElementById("ssid_text").value
-               new_pw = document.getElementById("pw_text").value
+               new_ssid = document.getElementById("ssid").value
+               new_pw = document.getElementById("pwd").value
                var send_data = {"add_wifi_ssid":{"ssid":new_ssid,"password":new_pw}}
                send_xmlhttp_post(send_data)
             }
             function remove_network(){
-               new_ssid = document.getElementById("ssid_text").value
+               new_ssid = document.getElementById("ssid").value
                var send_data = {"remove_wifi_ssid":new_ssid}
                send_xmlhttp_post(send_data)
             }
             function set_ap_ssid(){
-               new_ssid = document.getElementById("ssid_text").value
-               new_pw = document.getElementById("pw_text").value
+               new_ssid = document.getElementById("ssid").value
+               new_pw = document.getElementById("pwd").value
                var send_data = {"set_ap_ssid":{"ssid":new_ssid,"password":new_pw}}
                send_xmlhttp_post(send_data)
             }
             function clear_ap_ssid(){
-               new_ssid = document.getElementById("ssid_text").value
+               new_ssid = document.getElementById("ssid").value
                var send_data = {"clear_ap_ssid":new_ssid}
                send_xmlhttp_post(send_data)
             }
@@ -77,19 +86,25 @@ def get_index_html():
                var send_data = {"restart_network":"True"}
                send_xmlhttp_post(send_data)
             }
-            function send_on(){
-               var send_data = {"led_state":"on"}
+            function set_led_mode(mode){
+               if(mode >= 0 && mode <= 4){
+                  var send_data = send_data = {"set_led_mode":mode}
+                  send_xmlhttp_post(send_data)
+               }
+            }
+            function set_wake_color(){
+               var color_value = document.getElementById("wakecolor").value
+               var send_data = {"set_wake_color":color_value.slice(1)}
                send_xmlhttp_post(send_data)
             }
-            function send_off(){
-               var send_data = {"led_state":"off"}
+            function set_sleep_color(){
+               var color_value = document.getElementById("sleepcolor").value
+               var send_data = {"set_sleep_color":color_value.slice(1)}
                send_xmlhttp_post(send_data)
             }
-            function set_led(){
-               var redval = document.getElementById("redrange").value
-               var greenval = document.getElementById("greenrange").value
-               var blueval = document.getElementById("bluerange").value
-               var send_data = {"led_red":redval,"led_green":greenval,"led_blue":blueval}
+            function set_const_color(){
+               var color_value = document.getElementById("constcolor").value
+               var send_data = {"set_const_color":color_value.slice(1)}
                send_xmlhttp_post(send_data)
             }
             function get_led(){
@@ -102,13 +117,12 @@ def get_index_html():
             }
             function add_wake_time(){
                var day = document.getElementById("weekday").value
-               var start_hour = document.getElementById("start_hour").value
-               var start_min = document.getElementById("start_min").value
-               var end_hour = document.getElementById("end_hour").value
-               var end_min = document.getElementById("end_min").value
-               var start_time = [start_hour, start_min]
-               var end_time = [end_hour, end_min]
-               var time_string = "[("+start_hour+","+start_min+"):("+end_hour+","+end_min+")]"
+               var wake_start = document.getElementById("wake_start").value
+               var wake_end = document.getElementById("wake_end").value
+               var start_split = wake_start.split(":")
+               var end_split = wake_end.split(":")
+               var start_time = [start_split[0], start_split[1]]
+               var end_time = [end_split[0], end_split[1]]
                var send_data = {"add_wake_time": {"day":day, "time":{"start_time":start_time,"end_time":end_time}}}
                send_xmlhttp_post(send_data)
             }

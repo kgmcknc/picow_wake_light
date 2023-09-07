@@ -4,11 +4,6 @@ save_file_name = "./save_file.txt"
 class_data_updated = False
 save_fp = 0
 
-class led():
-   red = 0
-   green = 0
-   blue = 0
-
 class save_data_class():
    ap_ssid = ''
    ap_pw = ''
@@ -17,15 +12,9 @@ class save_data_class():
    ip_list = []
    hour_offset = 0
    led_mode = 0
-   led_red = 0
-   led_green = 0
-   led_blue = 0
-   wake_red = 0
-   wake_green = 0
-   wake_blue = 0
-   sleep_red = 0
-   sleep_green = 0
-   sleep_blue = 0
+   wake_led = {"red":0,"blue":0,"green":0}
+   sleep_led = {"red":0,"blue":0,"green":0}
+   const_led = {"red":0,"blue":0,"green":0}
    wake_monday = []
    wake_tuesday = []
    wake_wednesday = []

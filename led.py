@@ -6,20 +6,24 @@ saved_ip = ""
 blink_index = 0
 blink_list = []
 
+wake_led = {"red": 0, "green": 0, "blue": 0}
+sleep_led = {"red": 0, "green": 0, "blue": 0}
+const_led = {"red": 0, "green": 0, "blue": 0}
+
 led_state = 0
 led = machine.Pin("LED", machine.Pin.OUT)
-led1 = machine.PWM(machine.Pin(0))
-led1.freq(10000)
-led2 = machine.PWM(machine.Pin(1))
-led2.freq(10000)
-led3 = machine.PWM(machine.Pin(2))
-led3.freq(10000)
-led1.duty_u16(0)
-led2.duty_u16(0)
-led3.duty_u16(0)
-duty1 = 0
-duty2 = 0
-duty3 = 0
+led_blue = machine.PWM(machine.Pin(0))
+led_blue.freq(10000)
+led_green = machine.PWM(machine.Pin(1))
+led_green.freq(10000)
+led_red = machine.PWM(machine.Pin(2))
+led_red.freq(10000)
+led_red.duty_u16(0)
+led_green.duty_u16(0)
+led_blue.duty_u16(0)
+duty_red = 0
+duty_green = 0
+duty_blue = 0
 
 led_timer = machine.Timer()
 led_is_on = False
@@ -101,62 +105,58 @@ def blink(led, active_time, inactive_time, count, blink_polarity=1):
          time.sleep(inactive_time)
       blink_count = blink_count + 1
 
-def led_on():
-   global led_state
-   led_state = 1
-   set_led()
+# def led_on():
+#    global led_state
+#    led_state = 1
+#    set_led()
+
+def set_led(red_duty, green_duty, blue_duty):
+   led_red.duty_u16(red_duty)
+   led_green.duty_u16(green_duty)
+   led_blue.duty_u16(blue_duty)
+
+def led_wake():
+   set_led(wake_led["red"], wake_led["green"], wake_led["blue"])
+
+def led_sleep():
+   set_led(sleep_led["red"], sleep_led["green"], sleep_led["blue"])
+
+def led_const():
+   set_led(const_led["red"], const_led["green"], const_led["blue"])
 
 def led_off():
    global led_state
    led_state = 0
-   set_led()
+   set_led(0, 0, 0)
 
 def get_led_state():
    global led_state
    return led_state
 
 def configure_led_duty(red_duty=None, green_duty=None, blue_duty=None):
-   global duty1
-   global duty2
-   global duty3
+   global duty_red
+   global duty_green
+   global duty_blue
    if(red_duty != None):
-      duty3 = red_duty
+      duty_blue = red_duty
    if(green_duty != None):
-      duty2 = green_duty
+      duty_green = green_duty
    if(blue_duty != None):
-      duty1 = blue_duty
+      duty_red = blue_duty
 
 def get_led_duty():
-   global duty1
-   global duty2
-   global duty3
-   return (duty1, duty2, duty3)
-
-def set_led():
-   global led_state
-   global duty1
-   global duty2
-   global duty3
-
-   if(led_state == 0):
-      led1.duty_u16(0)
-      led2.duty_u16(0)
-      led3.duty_u16(0)
-   else:
-      led1.duty_u16(duty1)
-      led2.duty_u16(duty2)
-      led3.duty_u16(duty3)
-
-def update_led():
-   set_led()
+   global duty_red
+   global duty_green
+   global duty_blue
+   return (duty_red, duty_green, duty_blue)
 
 def init_led_test():
    global led_state
    global test
    global duty
-   global duty1
-   global duty2
-   global duty3
+   global duty_red
+   global duty_green
+   global duty_blue
    global increase
    global state
    global increase1
@@ -169,9 +169,9 @@ def init_led_test():
    led_state = 1
    test = 2
    duty = 60000
-   duty1 = 30000
-   duty2 = 30000
-   duty3 = 30000
+   duty_red = 30000
+   duty_green = 30000
+   duty_blue = 30000
    increase = 0
    state = 0
    increase1 = 0
@@ -186,9 +186,9 @@ def led_test():
    global led_state
    global test
    global duty
-   global duty1
-   global duty2
-   global duty3
+   global duty_red
+   global duty_green
+   global duty_blue
    global increase
    global state
    global increase1
@@ -199,24 +199,24 @@ def led_test():
    global decrease3
 
    if(led_state == 0):
-      led1.duty_u16(0)
-      led2.duty_u16(0)
-      led3.duty_u16(0)
+      led_red.duty_u16(0)
+      led_green.duty_u16(0)
+      led_blue.duty_u16(0)
       return None
 
    if(test == 0):
       print(duty)
-      led1.duty_u16(duty)
-      led2.duty_u16(0)
-      led3.duty_u16(0)
+      led_red.duty_u16(duty)
+      led_green.duty_u16(0)
+      led_blue.duty_u16(0)
       time.sleep(1)
-      led1.duty_u16(0)
-      led2.duty_u16(duty)
-      led3.duty_u16(0)
+      led_red.duty_u16(0)
+      led_green.duty_u16(duty)
+      led_blue.duty_u16(0)
       time.sleep(1)
-      led1.duty_u16(0)
-      led2.duty_u16(0)
-      led3.duty_u16(duty)
+      led_red.duty_u16(0)
+      led_green.duty_u16(0)
+      led_blue.duty_u16(duty)
       time.sleep(1)
       if(duty == 60000):
          increase = 0
@@ -228,18 +228,18 @@ def led_test():
       else:
          duty = duty - 5000
    if(test == 1):
-      duty1 = duty1 + 1
-      duty2 = duty2 + 2
-      duty3 = duty3 + 3
-      if(duty1 >= 65535):
-         duty1 = 0
-      if(duty2 >= 65535):
-         duty2 = 0
-      if(duty3 >= 65535):
-         duty3 = 0
-      led1.duty_u16(duty1)
-      led2.duty_u16(duty2)
-      led3.duty_u16(duty3)
+      duty_red = duty_red + 1
+      duty_green = duty_green + 2
+      duty_blue = duty_blue + 3
+      if(duty_red >= 65535):
+         duty_red = 0
+      if(duty_green >= 65535):
+         duty_green = 0
+      if(duty_blue >= 65535):
+         duty_blue = 0
+      led_red.duty_u16(duty_red)
+      led_green.duty_u16(duty_green)
+      led_blue.duty_u16(duty_blue)
       time.sleep(0.001)
    if(test == 2):
       increase1 = (state == 0) or (state == 5)
@@ -249,58 +249,58 @@ def led_test():
       increase3 = (state == 3)
       decrease3 = (state == 7)
       if(increase1):
-         duty1 = duty1 + 1
+         duty_red = duty_red + 1
       if(decrease1):
-         duty1 = duty1 - 1
+         duty_red = duty_red - 1
       if(increase2):
-         duty2 = duty2 + 1
+         duty_green = duty_green + 1
       if(decrease2):
-         duty2 = duty2 - 1
+         duty_green = duty_green - 1
       if(increase3):
-         duty3 = duty3 + 1
+         duty_blue = duty_blue + 1
       if(decrease3):
-         duty3 = duty3 - 1
+         duty_blue = duty_blue - 1
       prev_state = state
       if(state == 0):
-            if(duty1 >= 65535):
-               duty1 = 65535
+            if(duty_red >= 65535):
+               duty_red = 65535
                state = 1
       elif(state == 1):
-            if(duty2 >= 65535):
-               duty2 = 65535
+            if(duty_green >= 65535):
+               duty_green = 65535
                state = 2
       elif(state == 2):
-            if(duty1 <= 0):
-               duty1 = 0
+            if(duty_red <= 0):
+               duty_red = 0
                state = 3
       elif(state == 3):
-            if(duty3 >= 65535):
-               duty3 = 65535
+            if(duty_blue >= 65535):
+               duty_blue = 65535
                state = 4
       elif(state == 4):
-            if(duty2 <= 0):
-               duty2 = 0
+            if(duty_green <= 0):
+               duty_green = 0
                state = 5
       elif(state == 5):
-            if(duty1 >= 65535):
-               duty1 = 65535
+            if(duty_red >= 65535):
+               duty_red = 65535
                state = 6
       elif(state == 6):
-            if(duty2 >= 65535):
-               duty1 = 65535
-               duty2 = 65535
-               duty3 = 65535
+            if(duty_green >= 65535):
+               duty_red = 65535
+               duty_green = 65535
+               duty_blue = 65535
                state = 7
       elif(state == 7):
-            if(duty1 <= 0):
-               duty1 = 0
-               duty2 = 0
-               duty3 = 0
+            if(duty_red <= 0):
+               duty_red = 0
+               duty_green = 0
+               duty_blue = 0
                state = 0
       else:
          state = 0
       if(prev_state != state):
          print("new_state: ", state)
-      led1.duty_u16(duty1)
-      led2.duty_u16(duty2)
-      led3.duty_u16(duty3)
+      led_red.duty_u16(duty_red)
+      led_green.duty_u16(duty_green)
+      led_blue.duty_u16(duty_blue)
