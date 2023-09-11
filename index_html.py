@@ -11,14 +11,17 @@ def get_index_html():
             <label for="wakecolor">Select your favorite color:</label>
             <input type="color" id="wakecolor" name="wakecolor" value="#00ff00">
             <input type="button" value="Set Wake Color" onclick="set_wake_color()">
+            <input type="button" value="Get Wake Color" onclick="get_wake_color()">
             <br>
             <label for="sleepcolor">Select your favorite color:</label>
             <input type="color" id="sleepcolor" name="sleepcolor" value="#0000ff">
             <input type="button" value="Set Sleep Color" onclick="set_sleep_color()">
+            <input type="button" value="Get Sleep Color" onclick="get_sleep_color()">
             <br>
             <label for="constcolor">Select your favorite color:</label>
             <input type="color" id="constcolor" name="constcolor" value="#ff00ff">
             <input type="button" value="Set Constant Color" onclick="set_const_color()">
+            <input type="button" value="Get Constant Color" onclick="get_const_color()">
             <br>
             <input type="button" value="Resume Schedule" onclick="set_led_mode(0)">
             <input type="button" value="Force Wake" onclick="set_led_mode(1)">
@@ -60,6 +63,18 @@ def get_index_html():
             <button onclick="clear_wake_times()">Clear Wake Times</button>
          </body>
          <script>
+            get_led_values()
+            async function get_led_values(){
+               await sleep(500)
+               get_wake_color()
+               await sleep(500)
+               get_sleep_color()
+               await sleep(500)
+               get_const_color()
+            }
+            function sleep(ms) {
+               return new Promise(resolve => setTimeout(resolve, ms));
+            }
             function add_network(){
                new_ssid = document.getElementById("ssid").value
                new_pw = document.getElementById("pwd").value
@@ -107,13 +122,26 @@ def get_index_html():
                var send_data = {"set_const_color":color_value.slice(1)}
                send_xmlhttp_post(send_data)
             }
-            function get_led(){
-               var send_data = {"led_state":""}
-               send_xmlhttp_get(send_data, alert_response)
+            function get_wake_color(){
+               var send_data = {"get_wake_color":""}
+               send_xmlhttp_get(send_data, set_wake_value)
             }
-            function get_duty(){
-               var send_data = {"led_duty":""}
-               send_xmlhttp_get(send_data, alert_response)
+            function get_sleep_color(){
+               var send_data = {"get_sleep_color":""}
+               send_xmlhttp_get(send_data, set_sleep_value)
+            }
+            function get_const_color(){
+               var send_data = {"get_const_color":""}
+               send_xmlhttp_get(send_data, set_const_value)
+            }
+            function set_wake_value(response_data){
+               document.getElementById("wakecolor").value = "#"+response_data["get_wake_color"]
+            }
+            function set_sleep_value(response_data){
+               document.getElementById("sleepcolor").value = "#"+response_data["get_sleep_color"]
+            }
+            function set_const_value(response_data){
+               document.getElementById("constcolor").value = "#"+response_data["get_const_color"]
             }
             function add_wake_time(){
                var day = document.getElementById("weekday").value

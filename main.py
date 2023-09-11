@@ -238,15 +238,37 @@ def process_get_request(request, wifi: picow_wifi.picow_network_class):
          response['led_state'] = 'led_off'
       else:
          response['led_state'] = 'led_on'
-   if "led_duty" in get_data:
-      led_duty = led.get_led_duty()
-      response['led_red'] = led_duty[0]
-      response['led_green'] = led_duty[1]
-      response['led_blue'] = led_duty[2]
    if "get_wifi_ssid" in get_data:
       response['get_wifi_ssid'] = wifi.wifi_ssid_list
    if "get_ap_ssid" in get_data:
       response['get_ap_ssid'] = wifi.ap_ssid
+   if "get_wake_color" in get_data:
+      color_string = ""
+      value = "%02X" % int(led.wake_led["red"]/257)
+      color_string = color_string + value
+      value = "%02X" % int(led.wake_led["green"]/257)
+      color_string = color_string + value
+      value = "%02X" % int(led.wake_led["blue"]/257)
+      color_string = color_string + value
+      response['get_wake_color'] = color_string
+   if "get_sleep_color" in get_data:
+      color_string = ""
+      value = "%02X" % int(led.sleep_led["red"]/257)
+      color_string = color_string + value
+      value = "%02X" % int(led.sleep_led["green"]/257)
+      color_string = color_string + value
+      value = "%02X" % int(led.sleep_led["blue"]/257)
+      color_string = color_string + value
+      response['get_sleep_color'] = color_string
+   if "get_const_color" in get_data:
+      color_string = ""
+      value = "%02X" % int(led.const_led["red"]/257)
+      color_string = color_string + value
+      value = "%02X" % int(led.const_led["green"]/257)
+      color_string = color_string + value
+      value = "%02X" % int(led.const_led["blue"]/257)
+      color_string = color_string + value
+      response['get_const_color'] = color_string
    return json.dumps(response)
 
 def process_post_request(request, wifi: picow_wifi.picow_network_class, wake_times: schedule.wake_times_class):
