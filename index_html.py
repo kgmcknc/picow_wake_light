@@ -45,7 +45,7 @@ def get_index_html():
             Wake Time Settings:
             <br>
             Select a day:
-            <select name="weekday" id="weekday">
+            <select name="weekday" id="weekday" onchange="get_wake_times()">
             <option value="sunday">Sunday</option>
             <option value="monday">Monday</option>
             <option value="tuesday">Tuesday</option>
@@ -61,6 +61,9 @@ def get_index_html():
             <br>
             <button onclick="add_wake_time()">Add Wake Time</button>
             <button onclick="clear_wake_times()">Clear Wake Times</button>
+            <div id="schedule_div">
+               <div>No Times Scheduled</div>
+            </div>
          </body>
          <script>
             get_led_values()
@@ -71,6 +74,8 @@ def get_index_html():
                get_sleep_color()
                await sleep(500)
                get_const_color()
+               await sleep(500)
+               get_wake_times()
             }
             function sleep(ms) {
                return new Promise(resolve => setTimeout(resolve, ms));
@@ -152,12 +157,59 @@ def get_index_html():
                var start_time = [start_split[0], start_split[1]]
                var end_time = [end_split[0], end_split[1]]
                var send_data = {"add_wake_time": {"day":day, "time":{"start_time":start_time,"end_time":end_time}}}
-               send_xmlhttp_post(send_data)
+               send_xmlhttp_post(send_data, get_wake_times)
             }
             function clear_wake_times(){
                var day = document.getElementById("weekday").value
                var send_data = {"clear_wake_times": day}
-               send_xmlhttp_post(send_data)
+               send_xmlhttp_post(send_data, get_wake_times)
+            }
+            function get_wake_times(){
+               var day = document.getElementById("weekday").value
+               var send_data = {"get_wake_times": {"day":day}}
+               send_xmlhttp_get(send_data, set_wake_schedule)
+            }
+            function set_wake_schedule(response_data){
+               schedule_div = document.getElementById("schedule_div")
+               wake_list = response_data["get_wake_times"]
+               while(schedule_div.childElementCount > 0){
+                  schedule_div.removeChild(schedule_div.children[0])
+               }
+               list_len = wake_list.length
+               if(list_len == 0){
+                  new_child = document.createElement("div");
+                  new_child.innerHTML = "No Times Scheduled"
+                  schedule_div.appendChild(new_child)
+               }
+               for (let i = 0; i < list_len; i++) {
+                  start_time = wake_list[i]["start_time"]
+                  end_time = wake_list[i]["end_time"]
+                  if(start_time[0] > 11){
+                     if(start_time[0] == 12){
+                        start_hour = start_time[0]
+                     } else {
+                        start_hour = start_time[0]-12
+                     }
+                     start_string = "Wake_Start: "+start_hour+":"+start_time[1]+"PM"
+                  } else {
+                     start_hour = start_time[0]
+                     start_string = "Wake_Start: "+start_hour+":"+start_time[1]+"AM"
+                  }
+                  if(end_time[0] > 11){
+                     if(end_time[0] == 12){
+                        end_hour = end_time[0]
+                     } else {
+                        end_hour = end_time[0]-12
+                     }
+                     end_string = "Wake_End: "+end_hour+":"+end_time[1]+"PM"
+                  } else {
+                     end_hour = start_time[0]
+                     end_string = "Wake_End: "+end_hour+":"+end_time[1]+"AM"
+                  }
+                  new_child = document.createElement("div");
+                  new_child.innerHTML = start_string+"<br>"+end_string
+                  schedule_div.appendChild(new_child)
+               }
             }
             function send_get(get_data, callback_function){
                send_xmlhttp_get(get_data, callback_function)

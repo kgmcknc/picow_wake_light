@@ -210,7 +210,7 @@ def process_socket_read(read_data, wifi, wake_times):
       if(process_data[1] == ''):
          response_data = webpage.get_webpage()
       else:
-         response_data = process_get_request(process_data[1], wifi)
+         response_data = process_get_request(process_data[1], wifi, wake_times)
    if(process_data[0] == 'POST'):
       response_data = process_post_request(process_data[1], wifi, wake_times)
    return response_data
@@ -226,7 +226,7 @@ def send_response(server_socket: server.server_socket_class, response):
    server_socket.write_data(response_data)
    server_socket.close_connection()
 
-def process_get_request(request, wifi: picow_wifi.picow_network_class):
+def process_get_request(request, wifi: picow_wifi.picow_network_class, wake_times: schedule.wake_times_class):
    response = dict()
    try:
       get_data = json.loads(request)
@@ -269,6 +269,13 @@ def process_get_request(request, wifi: picow_wifi.picow_network_class):
       value = "%02X" % int(led.const_led["blue"]/257)
       color_string = color_string + value
       response['get_const_color'] = color_string
+   if "get_wake_times" in get_data:
+      day = get_data["get_wake_times"]["day"]
+      day_list = wake_times.get_day_list(day)
+      if(day_list != None):
+         response['get_wake_times'] = day_list.copy()
+      else:
+         response['get_wake_times'] = ""
    return json.dumps(response)
 
 def process_post_request(request, wifi: picow_wifi.picow_network_class, wake_times: schedule.wake_times_class):
