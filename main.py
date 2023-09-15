@@ -43,6 +43,9 @@ def main():
          led.set_led(10000, 0, 0)
          wifi.ap_ssid = database.ap_ssid
          wifi.ap_password = database.ap_pw
+
+         sched_time.hour_offset = database.hour_offset
+         print("hour offset, ", sched_time.hour_offset, database.hour_offset)
          
          if(len(database.ssid_list) > 0):
             wifi.configure_wifi(ssid=database.ssid_list.copy(), password=database.pw_list.copy(), auto_connect=False, wait_for_connect=True)
@@ -95,14 +98,14 @@ def main():
             if(read_ready == True):
                read_data = server_socket.read_data(1024)
                try:
-                  response_data = process_socket_read(read_data, wifi, wake_times)
+                  response_data = process_socket_read(read_data, wifi, wake_times, sched_time)
                except:
                   response_data = None
                send_response(server_socket, response_data)
-            sync_save_file(database, wifi, wake_times)
+            sync_save_file(database, wifi, wake_times, sched_time)
 
          # end of network connected while loop
-         sync_save_file(database, wifi, wake_times)
+         sync_save_file(database, wifi, wake_times, sched_time)
          print("Restarting Network")
          time.sleep(3)
          main_cleanup(server_socket, wifi)
@@ -127,7 +130,7 @@ def copy_wake_schedule(database: save_data.save_data_class, sched: schedule.wake
    sched.wake_friday = database.wake_friday.copy()
    sched.wake_saturday = database.wake_saturday.copy()
 
-def sync_save_file(database: save_data.save_data_class, wifi: picow_wifi.picow_network_class, sched: schedule.wake_times_class):
+def sync_save_file(database: save_data.save_data_class, wifi: picow_wifi.picow_network_class, sched: schedule.wake_times_class, sched_time: schedule.time_class):
    file_changed = False
    if(database.ap_ssid != wifi.ap_ssid):
       database.ap_ssid = wifi.ap_ssid
@@ -140,6 +143,9 @@ def sync_save_file(database: save_data.save_data_class, wifi: picow_wifi.picow_n
       file_changed = True
    if(database.pw_list != wifi.wifi_pw_list):
       database.pw_list = wifi.wifi_pw_list.copy()
+      file_changed = True
+   if(database.hour_offset != sched_time.hour_offset):
+      database.hour_offset = sched_time.hour_offset
       file_changed = True
    if(database.wake_sunday != sched.wake_sunday):
       database.wake_sunday = sched.wake_sunday.copy()
@@ -201,7 +207,7 @@ def check_wake_led(sched: schedule.time_class, wake_times: schedule.wake_times_c
    if(led.led_mode == 4):
       led.led_off()
 
-def process_socket_read(read_data, wifi, wake_times):
+def process_socket_read(read_data, wifi, wake_times, sched_time):
    response_data = None
    process_data = webpage.process_read_data(read_data)
    if(process_data == None):
@@ -212,7 +218,7 @@ def process_socket_read(read_data, wifi, wake_times):
       else:
          response_data = process_get_request(process_data[1], wifi, wake_times)
    if(process_data[0] == 'POST'):
-      response_data = process_post_request(process_data[1], wifi, wake_times)
+      response_data = process_post_request(process_data[1], wifi, wake_times, sched_time)
    return response_data
    
 def send_response(server_socket: server.server_socket_class, response):
@@ -283,7 +289,7 @@ def process_get_request(request, wifi: picow_wifi.picow_network_class, wake_time
 
    return json.dumps(response)
 
-def process_post_request(request, wifi: picow_wifi.picow_network_class, wake_times: schedule.wake_times_class):
+def process_post_request(request, wifi: picow_wifi.picow_network_class, wake_times: schedule.wake_times_class, sched: schedule.time_class):
    response = dict()
    try:
       post_data = json.loads(request)
@@ -291,6 +297,14 @@ def process_post_request(request, wifi: picow_wifi.picow_network_class, wake_tim
    except:
       post_data = dict()
       print("json error", request)
+   if "set_hour_offset" in post_data:
+      hour_offset = post_data['set_hour_offset']
+      if(sched.time_locked == True):
+         response['set_hour_offset'] = "success"
+         sched.set_hour_offset(hour_offset)
+      else:
+         response['set_hour_offset'] = "failed"
+
    if "set_led_mode" in post_data:
       response['set_led_mode'] = post_data['set_led_mode']
       if(post_data['set_led_mode'] >= 0 and post_data['set_led_mode'] <= 4):

@@ -69,6 +69,8 @@ def get_index_html():
             get_led_values()
             async function get_led_values(){
                await sleep(1000)
+               set_hour_offset()
+               await sleep(500)
                get_wake_color()
                await sleep(500)
                get_sleep_color()
@@ -85,6 +87,13 @@ def get_index_html():
             }
             function sleep(ms) {
                return new Promise(resolve => setTimeout(resolve, ms));
+            }
+            function set_hour_offset(){
+               var current_date = new Date();
+               var hour_offset = current_date.getTimezoneOffset();
+               hour_offset = hour_offset/60
+               var send_data = {"set_hour_offset":hour_offset}
+               send_xmlhttp_post(send_data)
             }
             function add_network(){
                new_ssid = document.getElementById("ssid").value

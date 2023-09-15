@@ -139,12 +139,12 @@ class time_class():
    def __init__(self, hour_offset=None):
       if(hour_offset != None):
          self.hour_offset = hour_offset
-         if(ntptime.host == None):
-            print("Fixing ntp time host")
-            ntptime.host = 'pool.ntp.org'
-         if(ntptime.timeout != 1):
-            print("Fixing ntp timeout")
-            ntptime.timeout = 1
+      if(ntptime.host == None):
+         print("Fixing ntp time host")
+         ntptime.host = 'pool.ntp.org'
+      if(ntptime.timeout != 1):
+         print("Fixing ntp timeout")
+         ntptime.timeout = 1
 
    def get_network_time(self):
       global last_second_check
@@ -165,9 +165,26 @@ class time_class():
       current_time = time.localtime()
       last_second_check = current_time[5]
 
+   def set_hour_offset(self, hour_offset):
+      self.hour_offset = hour_offset
+
    def get_weekday(self):
       current_time = time.localtime()
       day_num = current_time[6]
+      hour_num = current_time[3] - self.hour_offset
+      # adjust hour if needed
+      if(hour_num > 23):
+         hour_num = hour_num - 24
+         day_num = day_num + 1
+      if(hour_num < 0):
+         hour_num = hour_num + 24
+         day_num = day_num - 1
+      # adjust day if needed
+      if(day_num > 6):
+         day_num = day_num - 7
+      if(day_num < 0):
+         day_num = day_num + 7
+      # return day number
       if(day_num == 0):
          return "Monday"
       if(day_num == 1):
@@ -185,5 +202,11 @@ class time_class():
    
    def get_local_time(self):
       current_time = time.localtime()
-      return (current_time[3], current_time[4])
-      # convert hour/day as needed
+      current_min = current_time[4]
+      current_hour = current_time[3] - self.hour_offset
+      # adjust hour if needed
+      if(current_hour > 23):
+         current_hour = current_hour - 24
+      if(current_hour < 0):
+         current_hour = current_hour + 24
+      return (current_hour, current_min)
