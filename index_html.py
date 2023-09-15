@@ -6,42 +6,6 @@ def get_index_html():
             <title>PicoW LED Wake Light</title>
          </head>
          <body>
-            get status of all leds from board and update the values of the colors
-            <br><br>
-            <label for="wakecolor">Select your favorite color:</label>
-            <input type="color" id="wakecolor" name="wakecolor" value="#00ff00">
-            <input type="button" value="Set Wake Color" onclick="set_wake_color()">
-            <input type="button" value="Get Wake Color" onclick="get_wake_color()">
-            <br>
-            <label for="sleepcolor">Select your favorite color:</label>
-            <input type="color" id="sleepcolor" name="sleepcolor" value="#0000ff">
-            <input type="button" value="Set Sleep Color" onclick="set_sleep_color()">
-            <input type="button" value="Get Sleep Color" onclick="get_sleep_color()">
-            <br>
-            <label for="constcolor">Select your favorite color:</label>
-            <input type="color" id="constcolor" name="constcolor" value="#ff00ff">
-            <input type="button" value="Set Constant Color" onclick="set_const_color()">
-            <input type="button" value="Get Constant Color" onclick="get_const_color()">
-            <br>
-            <input type="button" value="Resume Schedule" onclick="set_led_mode(0)">
-            <input type="button" value="Force Wake" onclick="set_led_mode(1)">
-            <input type="button" value="Force Sleep" onclick="set_led_mode(2)">
-            <input type="button" value="Force Constant" onclick="set_led_mode(3)">
-            <input type="button" value="Turn LED Off" onclick="set_led_mode(4)">
-            <br><br>
-            Get current wake status
-            Get current wake schedule
-            <br><br>
-            <label for="ssid">SSID:</label><br>
-            <input type="text" id="ssid" name="ssid"><br>
-            <label for="pwd">Password:</label><br>
-            <input type="password" id="pwd" name="pwd"><br><br>
-            <button onclick="add_network()">Add Network</button>
-            <button onclick="remove_network()">Remove Network</button>
-            <button onclick="set_ap_ssid()">Set AP SSID</button>
-            <button onclick="clear_ap_ssid()">Clear AP SSID</button>
-            <button onclick="restart_network()">Restart Network</button>
-            <br><br>
             Wake Time Settings:
             <br>
             Select a day:
@@ -64,11 +28,47 @@ def get_index_html():
             <div id="schedule_div">
                <div>No Times Scheduled</div>
             </div>
+            <br><br>
+            <div id="status_div"></div>
+            <br><br>
+            <label for="wakecolor">Select your favorite color:</label>
+            <input type="color" id="wakecolor" name="wakecolor" value="#00ff00">
+            <input type="button" value="Set Wake Color" onclick="set_wake_color()">
+            <input type="button" value="Get Wake Color" onclick="get_wake_color()">
+            <br>
+            <label for="sleepcolor">Select your favorite color:</label>
+            <input type="color" id="sleepcolor" name="sleepcolor" value="#0000ff">
+            <input type="button" value="Set Sleep Color" onclick="set_sleep_color()">
+            <input type="button" value="Get Sleep Color" onclick="get_sleep_color()">
+            <br>
+            <label for="constcolor">Select your favorite color:</label>
+            <input type="color" id="constcolor" name="constcolor" value="#ff00ff">
+            <input type="button" value="Set Constant Color" onclick="set_const_color()">
+            <input type="button" value="Get Constant Color" onclick="get_const_color()">
+            <br>
+            <input type="button" value="Resume Schedule" onclick="set_led_mode(0)">
+            <input type="button" value="Force Wake" onclick="set_led_mode(1)">
+            <input type="button" value="Force Sleep" onclick="set_led_mode(2)">
+            <input type="button" value="Force Constant" onclick="set_led_mode(3)">
+            <input type="button" value="Turn LED Off" onclick="set_led_mode(4)">
+            <br><br>
+            <label for="ssid">SSID:</label><br>
+            <input type="text" id="ssid" name="ssid"><br>
+            <label for="pwd">Password:</label><br>
+            <input type="password" id="pwd" name="pwd"><br><br>
+            <button onclick="add_network()">Add Network</button>
+            <button onclick="remove_network()">Remove Network</button>
+            <button onclick="set_ap_ssid()">Set AP SSID</button>
+            <button onclick="clear_ap_ssid()">Clear AP SSID</button>
+            <button onclick="restart_network()">Restart Network</button>
+            <br><br>
          </body>
          <script>
+            led_mode = 0
+            setInterval(get_status, 5000);
             get_led_values()
             async function get_led_values(){
-               await sleep(500)
+               await sleep(1000)
                get_wake_color()
                await sleep(500)
                get_sleep_color()
@@ -76,6 +76,12 @@ def get_index_html():
                get_const_color()
                await sleep(500)
                get_wake_times()
+            }
+            async function get_status(){
+               await sleep(1000)
+               get_led_mode()
+               await sleep(1000)
+               get_wake_status()
             }
             function sleep(ms) {
                return new Promise(resolve => setTimeout(resolve, ms));
@@ -210,6 +216,51 @@ def get_index_html():
                   new_child.innerHTML = start_string+"<br>"+end_string
                   schedule_div.appendChild(new_child)
                }
+            }
+            function get_led_mode(){
+               var send_data = {"get_led_mode": ""}
+               send_xmlhttp_get(send_data, save_led_mode)
+            }
+            function get_wake_status(){
+               var send_data = {"get_wake_status": ""}
+               send_xmlhttp_get(send_data, set_wake_status)
+            }
+            function save_led_mode(response_data){
+               led_mode = response_data["get_led_mode"]
+            }
+            function set_wake_status(response_data){
+               wake_color = document.getElementById("wakecolor").value
+               sleep_color = document.getElementById("sleepcolor").value
+               const_color = document.getElementById("constcolor").value
+
+               status_div = document.getElementById("status_div")
+               if(led_mode == 0){
+                  if(response_data["get_wake_status"] == true){
+                     status_div.innerHTML = "Wake Time!"
+                     status_div.style.color = wake_color
+                  } else {
+                     status_div.innerHTML = "Sleep Time!"
+                     status_div.style.color = sleep_color
+                  }
+                  return
+               }
+               if(led_mode == 1){
+                  status_div.innerHTML = "Forcing Awake!"
+                  status_div.style.color = wake_color
+                  return
+               }
+               if(led_mode == 2){
+                  status_div.innerHTML = "Forcing Sleep!"
+                  status_div.style.color = sleep_color
+                  return
+               }
+               if(led_mode == 3){
+                  status_div.innerHTML = "Forcing Constant!"
+                  status_div.style.color = const_color
+                  return
+               }
+               status_div.innerHTML = "Led Off!"
+               status_div.style.color = ""
             }
             function send_get(get_data, callback_function){
                send_xmlhttp_get(get_data, callback_function)

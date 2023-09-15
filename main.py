@@ -276,6 +276,11 @@ def process_get_request(request, wifi: picow_wifi.picow_network_class, wake_time
          response['get_wake_times'] = day_list.copy()
       else:
          response['get_wake_times'] = ""
+   if "get_wake_status" in get_data:
+      response['get_wake_status'] = wake_times.wake_time
+   if "get_led_mode" in get_data:
+      response['get_led_mode'] = led.led_mode
+
    return json.dumps(response)
 
 def process_post_request(request, wifi: picow_wifi.picow_network_class, wake_times: schedule.wake_times_class):
