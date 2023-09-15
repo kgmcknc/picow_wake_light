@@ -299,6 +299,8 @@ def process_post_request(request, wifi: picow_wifi.picow_network_class, wake_tim
       print("json error", request)
    if "set_hour_offset" in post_data:
       hour_offset = post_data['set_hour_offset']
+      if(hour_offset > 23 or hour_offset < -23):
+         return
       if(sched.time_locked == True):
          response['set_hour_offset'] = "success"
          sched.set_hour_offset(hour_offset)
