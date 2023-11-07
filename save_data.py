@@ -61,7 +61,7 @@ class save_data_class():
       new_list = self.save_class_to_text_list()
       if(file_lines != new_list):
          print("file_lines:", file_lines)
-         print("class vars:", class_vars)
+         print("class vars:", new_list)
          print("save file doesn't match class...rewriting save file")
          self.rewrite_save_file()
 

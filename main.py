@@ -6,6 +6,7 @@ import json
 import webpage
 import schedule
 import machine
+import gc
 import led
 
 infinite_main_loop = False
@@ -21,6 +22,7 @@ infinite_main_loop = False
 picow_led = machine.Pin("LED", machine.Pin.OUT)
 
 def main():
+   gc.collect()
    # main, one time, initialization code
    database = save_data.save_data_class()
    wifi = picow_wifi.picow_network_class(ap_ssid="WAKELIGHT", ap_password="wakelight")
@@ -41,8 +43,9 @@ def main():
          device_ip = ""
          
          led.set_led(10000, 0, 0)
-         wifi.ap_ssid = database.ap_ssid
-         wifi.ap_password = database.ap_pw
+         if(database.ap_ssid != ""):
+            wifi.ap_ssid = database.ap_ssid
+            wifi.ap_password = database.ap_pw
 
          sched_time.hour_offset = database.hour_offset
          print("hour offset, ", sched_time.hour_offset, database.hour_offset)
@@ -236,7 +239,11 @@ def process_socket_read(read_data, wifi, wake_times, sched_time):
       return None
    if(process_data[0] == 'GET'):
       if(process_data[1] == ''):
-         response_data = webpage.get_webpage()
+         response_data = webpage.get_webfile("index.html")
+         return response_data
+      if(process_data[1] == 'index.js'):
+         response_data = webpage.get_webfile("index.js")
+         return response_data
       else:
          response_data = process_get_request(process_data[1], wifi, wake_times, sched_time)
          request_response = webpage.create_request_response(response_data)

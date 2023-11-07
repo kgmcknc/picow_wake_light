@@ -1,5 +1,5 @@
 
-import index_html
+import webfiles
 
 _hexdig = '0123456789ABCDEFabcdef'
 _hextobyte = None
@@ -36,9 +36,19 @@ def create_content_length_header(data):
    len_header = len_header + resp_header_cont_len + str(data_len) + '\r\n'
    return len_header
 
-def get_webpage():
-   html = index_html.get_index_html()
-   return create_html_packet(html)
+def get_webfile(webfile_name):
+   try:
+      if(webfile_name == "index.html"):
+         filedata = webfiles.get_index_html()
+         return create_html_packet(filedata)
+      if(webfile_name == "index.js"):
+         filedata = webfiles.get_index_js()
+         return create_html_packet(filedata)
+   except Exception as e:
+      print("webpage error")
+      print(e)
+      return None
+
 
 def process_read_data(read_data):
    response = None
