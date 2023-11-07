@@ -18,6 +18,12 @@ def create_html_packet(html_data):
    new_packet = new_packet + html_data
    return new_packet
 
+def create_request_response(response_data):
+   new_packet = ''
+   new_packet = new_packet + resp_header_okay + create_content_length_header(response_data) + header_end + '\r\n'
+   new_packet = new_packet + response_data
+   return new_packet
+
 def create_empty_response():
    new_packet = ''
    new_packet = new_packet + resp_header_okay + resp_header_cont_type + header_end + '\r\n'
@@ -55,6 +61,26 @@ def process_read_data(read_data):
    return response
 
 def unquote(string):
+   new_string = ''
+   startval = 0
+   loc = string.find("%", startval)
+   if(loc < 0):
+      return string
+   while(loc >= 0):
+      new_string = new_string + string[startval:loc]
+      startval = loc + 3
+      changedat = string[loc:loc+3]
+      if(changedat == '%7B'):
+         new_string = new_string + '{'
+      if(changedat == '%7D'):
+         new_string = new_string + '}'
+      if(changedat == '%22'):
+         new_string = new_string + '\"'
+      loc = string.find("%", startval)
+   return new_string
+
+
+def quote(string):
    new_string = ''
    startval = 0
    loc = string.find("%", startval)

@@ -9,19 +9,15 @@ class save_data_class():
    ap_pw = ''
    ssid_list = []
    pw_list = []
-   ip_list = []
+   config_list = []
    hour_offset = 0
    led_mode = 0
    wake_led = {"red":0,"blue":0,"green":0}
    sleep_led = {"red":0,"blue":0,"green":0}
-   const_led = {"red":0,"blue":0,"green":0}
-   wake_monday = []
-   wake_tuesday = []
-   wake_wednesday = []
-   wake_thursday = []
-   wake_friday = []
-   wake_saturday = []
-   wake_sunday = []
+   custom_led = {"red":0,"blue":0,"green":0}
+   timer_led = {"red":0,"blue":0,"green":0}
+   wake_times = {"monday":[],"tuesday":[],"wednesday":[],"thursday":[],"friday":[],"saturday":[],"sunday":[]}
+   off_times = {"monday":[],"tuesday":[],"wednesday":[],"thursday":[],"friday":[],"saturday":[],"sunday":[]}
    
    def __init__(self):
       self.init_class_from_save_file()
@@ -64,6 +60,8 @@ class save_data_class():
             print("Unknown File Key:", key)
       new_list = self.save_class_to_text_list()
       if(file_lines != new_list):
+         print("file_lines:", file_lines)
+         print("class vars:", class_vars)
          print("save file doesn't match class...rewriting save file")
          self.rewrite_save_file()
 

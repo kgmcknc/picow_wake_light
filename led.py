@@ -8,9 +8,11 @@ blink_list = []
 
 wake_led = {"red": 0, "green": 0, "blue": 0}
 sleep_led = {"red": 0, "green": 0, "blue": 0}
-const_led = {"red": 0, "green": 0, "blue": 0}
+custom_led = {"red": 0, "green": 0, "blue": 0}
+timer_led = {"red": 0, "green": 0, "blue": 0}
 
 led_state = 0
+led_status = 0
 led = machine.Pin("LED", machine.Pin.OUT)
 led_blue = machine.PWM(machine.Pin(0))
 led_blue.freq(10000)
@@ -25,7 +27,7 @@ duty_red = 0
 duty_green = 0
 duty_blue = 0
 
-led_timer = machine.Timer()
+machine_led_timer = machine.Timer()
 led_is_on = False
 timer_active = False
 blink_count = 0
@@ -41,7 +43,7 @@ def blink_ip_addr(led, ip_addr):
    global timer_active
    global led_is_on
    global blink_count
-   global led_timer
+   global machine_led_timer
 
    if(ip_addr != saved_ip):
       saved_ip = ip_addr
@@ -50,7 +52,7 @@ def blink_ip_addr(led, ip_addr):
       blink_list = []
       led_is_on = False
       led.off()
-      led_timer.deinit()
+      machine_led_timer.deinit()
       timer_active = False
       for item in saved_ip:
          if(item == '.'):
@@ -80,9 +82,9 @@ def blink_ip_addr(led, ip_addr):
          set_led_timer(blink_list[blink_index][0])
    
 def set_led_timer(wait_time):
-   global led_timer
+   global machine_led_timer
    timer_period = int(wait_time*1000)
-   led_timer.init(mode=machine.Timer.ONE_SHOT, period=timer_period, callback=led_timer_done)
+   machine_led_timer.init(mode=machine.Timer.ONE_SHOT, period=timer_period, callback=led_timer_done)
 
 def led_timer_done(timer):
    global timer_active
@@ -121,8 +123,11 @@ def led_wake():
 def led_sleep():
    set_led(sleep_led["red"], sleep_led["green"], sleep_led["blue"])
 
-def led_const():
-   set_led(const_led["red"], const_led["green"], const_led["blue"])
+def led_custom():
+   set_led(custom_led["red"], custom_led["green"], custom_led["blue"])
+
+def led_timer():
+   set_led(timer_led["red"], timer_led["green"], timer_led["blue"])
 
 def led_off():
    global led_state

@@ -88,6 +88,8 @@ class server_socket_class:
             self.connection.sendall(data)
          except:
             print("error writing")
+      else:
+         print("Connection closed - not writing")
 
    def close_connection(self):
       if(self.connected == 1):

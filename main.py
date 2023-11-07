@@ -48,7 +48,7 @@ def main():
          print("hour offset, ", sched_time.hour_offset, database.hour_offset)
          
          if(len(database.ssid_list) > 0):
-            wifi.configure_wifi(ssid=database.ssid_list.copy(), password=database.pw_list.copy(), auto_connect=False, wait_for_connect=True)
+            wifi.configure_wifi(ssid=database.ssid_list.copy(), password=database.pw_list.copy(), config=database.config_list.copy(), auto_connect=False, wait_for_connect=True)
          print("Database SSID List", database.ssid_list)
          print("Wifi SSID List", wifi.wifi_ssid_list)
 
@@ -56,7 +56,8 @@ def main():
          # load schedule from database to schedule file
          led.wake_led = database.wake_led.copy()
          led.sleep_led = database.sleep_led.copy()
-         led.const_led = database.const_led.copy()
+         led.custom_led = database.custom_led.copy()
+         led.timer_led = database.timer_led.copy()
          led.led_mode = database.led_mode
          
          print("Starting Web Check")
@@ -97,6 +98,8 @@ def main():
             read_ready = server_socket.check_read_ready()
             if(read_ready == True):
                read_data = server_socket.read_data(1024)
+               # print(read_data)
+               # print("")
                try:
                   response_data = process_socket_read(read_data, wifi, wake_times, sched_time)
                except:
@@ -122,13 +125,21 @@ def main():
       machine.reset()
 
 def copy_wake_schedule(database: save_data.save_data_class, sched: schedule.wake_times_class):
-   sched.wake_sunday = database.wake_sunday.copy()
-   sched.wake_monday = database.wake_monday.copy()
-   sched.wake_tuesday = database.wake_tuesday.copy()
-   sched.wake_wednesday = database.wake_wednesday.copy()
-   sched.wake_thursday = database.wake_thursday.copy()
-   sched.wake_friday = database.wake_friday.copy()
-   sched.wake_saturday = database.wake_saturday.copy()
+   sched.wake_times["sunday"] = database.wake_times["sunday"].copy()
+   sched.wake_times["monday"] = database.wake_times["monday"].copy()
+   sched.wake_times["tuesday"] = database.wake_times["tuesday"].copy()
+   sched.wake_times["wednesday"] = database.wake_times["wednesday"].copy()
+   sched.wake_times["thursday"] = database.wake_times["thursday"].copy()
+   sched.wake_times["friday"] = database.wake_times["friday"].copy()
+   sched.wake_times["saturday"] = database.wake_times["saturday"].copy()
+
+   sched.off_times["sunday"] = database.off_times["sunday"].copy()
+   sched.off_times["monday"] = database.off_times["monday"].copy()
+   sched.off_times["tuesday"] = database.off_times["tuesday"].copy()
+   sched.off_times["wednesday"] = database.off_times["wednesday"].copy()
+   sched.off_times["thursday"] = database.off_times["thursday"].copy()
+   sched.off_times["friday"] = database.off_times["friday"].copy()
+   sched.off_times["saturday"] = database.off_times["saturday"].copy()
 
 def sync_save_file(database: save_data.save_data_class, wifi: picow_wifi.picow_network_class, sched: schedule.wake_times_class, sched_time: schedule.time_class):
    file_changed = False
@@ -144,29 +155,17 @@ def sync_save_file(database: save_data.save_data_class, wifi: picow_wifi.picow_n
    if(database.pw_list != wifi.wifi_pw_list):
       database.pw_list = wifi.wifi_pw_list.copy()
       file_changed = True
+   if(database.config_list != wifi.wifi_config_list):
+      database.config_list = wifi.wifi_config_list.copy()
+      file_changed = True
    if(database.hour_offset != sched_time.hour_offset):
       database.hour_offset = sched_time.hour_offset
       file_changed = True
-   if(database.wake_sunday != sched.wake_sunday):
-      database.wake_sunday = sched.wake_sunday.copy()
+   if(database.wake_times != sched.wake_times):
+      database.wake_times = sched.wake_times.copy()
       file_changed = True
-   if(database.wake_monday != sched.wake_monday):
-      database.wake_monday = sched.wake_monday.copy()
-      file_changed = True
-   if(database.wake_tuesday != sched.wake_tuesday):
-      database.wake_tuesday = sched.wake_tuesday.copy()
-      file_changed = True
-   if(database.wake_wednesday != sched.wake_wednesday):
-      database.wake_wednesday = sched.wake_wednesday.copy()
-      file_changed = True
-   if(database.wake_thursday != sched.wake_thursday):
-      database.wake_thursday = sched.wake_thursday.copy()
-      file_changed = True
-   if(database.wake_friday != sched.wake_friday):
-      database.wake_friday = sched.wake_friday.copy()
-      file_changed = True
-   if(database.wake_saturday != sched.wake_saturday):
-      database.wake_saturday = sched.wake_saturday.copy()
+   if(database.off_times != sched.off_times):
+      database.off_times = sched.off_times.copy()
       file_changed = True
    if(database.led_mode != led.led_mode):
       database.led_mode = led.led_mode
@@ -177,8 +176,10 @@ def sync_save_file(database: save_data.save_data_class, wifi: picow_wifi.picow_n
    if(database.sleep_led != led.sleep_led):
       database.sleep_led = led.sleep_led.copy()
       file_changed = True
-   if(database.const_led != led.const_led):
-      database.const_led = led.const_led.copy()
+   if(database.custom_led != led.custom_led):
+      database.custom_led = led.custom_led.copy()
+   if(database.timer_led != led.timer_led):
+      database.timer_led = led.timer_led.copy()
       file_changed = True
 
    if(file_changed == True):
@@ -187,24 +188,45 @@ def sync_save_file(database: save_data.save_data_class, wifi: picow_wifi.picow_n
       database.sync_file()
 
 def check_wake_led(sched: schedule.time_class, wake_times: schedule.wake_times_class):
+   # led priority when running schedule (0):
+   # if timer is set, do timer mode
+   # if off, turn led off
+   # if wake time, set wake color
+   # do sleep color
    if(led.led_mode == 0):
       if(sched.time_locked == True):
-         current_time = sched.get_local_time()
-         current_day = sched.get_weekday()
-         if(wake_times.check_wake_time(current_day, current_time)):
-            led.led_wake()
+         if(sched.timer_active == True):
+            sched.check_timer()
+            led.led_timer()
+            led.led_status = 5
          else:
-            led.led_sleep()
+            current_time = sched.get_local_time()
+            current_day = sched.get_weekday()
+            if(wake_times.check_off_time(current_day, current_time)):
+               led.led_status = 4
+               led.led_off()
+            else:
+               if(wake_times.check_wake_time(current_day, current_time)):
+                  led.led_status = 1
+                  led.led_wake()
+               else:
+                  led.led_status = 0
+                  led.led_sleep()
       else:
          # load last saved static led settings from database here
-         led.led_const()
+         led.led_status = -1
+         led.led_custom()
    if(led.led_mode == 1):
+      led.led_status = 1
       led.led_wake()
    if(led.led_mode == 2):
+      led.led_status = 2
       led.led_sleep()
    if(led.led_mode == 3):
-      led.led_const()
+      led.led_status = 3
+      led.led_custom()
    if(led.led_mode == 4):
+      led.led_status = 4
       led.led_off()
 
 def process_socket_read(read_data, wifi, wake_times, sched_time):
@@ -216,9 +238,13 @@ def process_socket_read(read_data, wifi, wake_times, sched_time):
       if(process_data[1] == ''):
          response_data = webpage.get_webpage()
       else:
-         response_data = process_get_request(process_data[1], wifi, wake_times)
+         response_data = process_get_request(process_data[1], wifi, wake_times, sched_time)
+         request_response = webpage.create_request_response(response_data)
+         response_data = request_response
    if(process_data[0] == 'POST'):
       response_data = process_post_request(process_data[1], wifi, wake_times, sched_time)
+      request_response = webpage.create_request_response(response_data)
+      response_data = request_response
    return response_data
    
 def send_response(server_socket: server.server_socket_class, response):
@@ -229,10 +255,11 @@ def send_response(server_socket: server.server_socket_class, response):
          response_data = webpage.create_empty_response()
       else:
          response_data = response
+   # print(response_data)
    server_socket.write_data(response_data)
    server_socket.close_connection()
 
-def process_get_request(request, wifi: picow_wifi.picow_network_class, wake_times: schedule.wake_times_class):
+def process_get_request(request, wifi: picow_wifi.picow_network_class, wake_times: schedule.wake_times_class, schedule: schedule.time_class):
    response = dict()
    try:
       get_data = json.loads(request)
@@ -266,24 +293,42 @@ def process_get_request(request, wifi: picow_wifi.picow_network_class, wake_time
       value = "%02X" % int(led.sleep_led["blue"]/257)
       color_string = color_string + value
       response['get_sleep_color'] = color_string
-   if "get_const_color" in get_data:
+   if "get_custom_color" in get_data:
       color_string = ""
-      value = "%02X" % int(led.const_led["red"]/257)
+      value = "%02X" % int(led.custom_led["red"]/257)
       color_string = color_string + value
-      value = "%02X" % int(led.const_led["green"]/257)
+      value = "%02X" % int(led.custom_led["green"]/257)
       color_string = color_string + value
-      value = "%02X" % int(led.const_led["blue"]/257)
+      value = "%02X" % int(led.custom_led["blue"]/257)
       color_string = color_string + value
-      response['get_const_color'] = color_string
+      response['get_custom_color'] = color_string
+   if "get_timer_color" in get_data:
+      color_string = ""
+      value = "%02X" % int(led.timer_led["red"]/257)
+      color_string = color_string + value
+      value = "%02X" % int(led.timer_led["green"]/257)
+      color_string = color_string + value
+      value = "%02X" % int(led.timer_led["blue"]/257)
+      color_string = color_string + value
+      response['get_timer_color'] = color_string
    if "get_wake_times" in get_data:
       day = get_data["get_wake_times"]["day"]
-      day_list = wake_times.get_day_list(day)
+      day_list = wake_times.get_day_list(wake_times.wake_times, day)
       if(day_list != None):
          response['get_wake_times'] = day_list.copy()
       else:
          response['get_wake_times'] = ""
-   if "get_wake_status" in get_data:
-      response['get_wake_status'] = wake_times.wake_time
+   if "get_off_times" in get_data:
+      day = get_data["get_off_times"]["day"]
+      day_list = wake_times.get_day_list(wake_times.off_times, day)
+      if(day_list != None):
+         response['get_off_times'] = day_list.copy()
+      else:
+         response['get_wake_times'] = ""
+   if "get_led_status" in get_data:
+      response['get_led_status'] = led.led_status
+   if "get_timer_status" in get_data:
+      response['get_timer_status'] = schedule.get_timer_status()
    if "get_led_mode" in get_data:
       response['get_led_mode'] = led.led_mode
 
@@ -293,7 +338,7 @@ def process_post_request(request, wifi: picow_wifi.picow_network_class, wake_tim
    response = dict()
    try:
       post_data = json.loads(request)
-      print(post_data)
+      #print(post_data)
    except:
       post_data = dict()
       print("json error", request)
@@ -319,7 +364,6 @@ def process_post_request(request, wifi: picow_wifi.picow_network_class, wake_tim
             led.wake_led["red"] = int(led_color[0:2], 16)*257
             led.wake_led["green"] = int(led_color[2:4], 16)*257
             led.wake_led["blue"] = int(led_color[4:6], 16)*257
-            print(led.wake_led)
    if "set_sleep_color" in post_data:
       response['set_sleep_color'] = "success"
       led_color = post_data['set_sleep_color']
@@ -328,18 +372,31 @@ def process_post_request(request, wifi: picow_wifi.picow_network_class, wake_tim
             led.sleep_led["red"] = int(led_color[0:2], 16)*257
             led.sleep_led["green"] = int(led_color[2:4], 16)*257
             led.sleep_led["blue"] = int(led_color[4:6], 16)*257
-   if "set_const_color" in post_data:
-      response['set_wake_color'] = "success"
-      led_color = post_data['set_const_color']
+   if "set_custom_color" in post_data:
+      response['set_custom_color'] = "success"
+      led_color = post_data['set_custom_color']
       if(isinstance(led_color, str)):
          if(len(led_color) == 6):
-            led.const_led["red"] = int(led_color[0:2], 16)*257
-            led.const_led["green"] = int(led_color[2:4], 16)*257
-            led.const_led["blue"] = int(led_color[4:6], 16)*257
+            led.custom_led["red"] = int(led_color[0:2], 16)*257
+            led.custom_led["green"] = int(led_color[2:4], 16)*257
+            led.custom_led["blue"] = int(led_color[4:6], 16)*257
+   if "set_timer_color" in post_data:
+      response['set_timer_color'] = "success"
+      led_color = post_data['set_timer_color']
+      if(isinstance(led_color, str)):
+         if(len(led_color) == 6):
+            led.timer_led["red"] = int(led_color[0:2], 16)*257
+            led.timer_led["green"] = int(led_color[2:4], 16)*257
+            led.timer_led["blue"] = int(led_color[4:6], 16)*257
    if "add_wifi_ssid" in post_data:
       new_ssid = post_data["add_wifi_ssid"]["ssid"]
       new_password = post_data["add_wifi_ssid"]["password"]
-      wifi.add_ssid(new_ssid, new_password)
+      new_ip = post_data["add_wifi_ssid"]["ip_addr"]
+      new_mask = post_data["add_wifi_ssid"]["mask"]
+      new_gw = post_data["add_wifi_ssid"]["gateway"]
+      new_dns = post_data["add_wifi_ssid"]["dns"]
+      config = (new_ip, new_mask, new_gw, new_dns)
+      wifi.add_ssid(new_ssid, new_password, config)
       response['add_wifi_ssid'] = "success"
    if "remove_wifi_ssid" in post_data:
       rem_ssid = post_data["remove_wifi_ssid"]
@@ -376,6 +433,24 @@ def process_post_request(request, wifi: picow_wifi.picow_network_class, wake_tim
       day = post_data["clear_wake_times"]
       wake_times.clear_wake_times(day)
       response['clear_wake_times'] = "success"
+   if "add_off_time" in post_data:
+      day = post_data["add_off_time"]["day"]
+      time = post_data["add_off_time"]["time"]
+      off_time_list = [time]
+      wake_times.add_off_time(day, off_time_list)
+      response['add_off_time'] = "success"
+   if "clear_off_times" in post_data:
+      day = post_data["clear_off_times"]
+      wake_times.clear_off_times(day)
+      response['clear_off_times'] = "success"
+   if "start_timer" in post_data:
+      time = post_data["start_timer"]["timer_length"]
+      sched.set_timer(time)
+      response['start_timer'] = "success"
+   if "clear_timer" in post_data:
+      day = post_data["clear_timer"]
+      sched.clear_timer()
+      response['clear_timer'] = "success"
 
    return json.dumps(response)
 

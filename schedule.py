@@ -5,31 +5,20 @@ last_second_check = 0
 
 class wake_times_class():
    wake_time = False
-   wake_monday = []
-   wake_tuesday = []
-   wake_wednesday = []
-   wake_thursday = []
-   wake_friday = []
-   wake_saturday = []
-   wake_sunday = []
+
+   wake_times = {"monday":[],"tuesday":[],"wednesday":[],"thursday":[],"friday":[],"saturday":[],"sunday":[]}
+   off_times = {"monday":[],"tuesday":[],"wednesday":[],"thursday":[],"friday":[],"saturday":[],"sunday":[]}
 
    def __init__(self):
       self.wake_time = False
-      self.wake_monday = []
-      self.wake_tuesday = []
-      self.wake_wednesday = []
-      self.wake_thursday = []
-      self.wake_friday = []
-      self.wake_saturday = []
-      self.wake_sunday = []
    
    def check_wake_time(self, day, current_time):
-      day_list = self.get_day_list(day)
+      day_list = self.get_day_list(self.wake_times, day)
       if(day_list == None):
          return
-      for wake_item in day_list:
-         start_time = wake_item["start_time"]
-         end_time = wake_item["end_time"]
+      for day_item in day_list:
+         start_time = day_item["start_time"]
+         end_time = day_item["end_time"]
          start_time_decimal = int(start_time[0]) + (int(start_time[1])/100)
          end_time_decimal = int(end_time[0]) + (int(end_time[1])/100)
          current_time_decimal = int(current_time[0]) + (int(current_time[1])/100)
@@ -40,37 +29,54 @@ class wake_times_class():
       self.wake_time = False
       return False
    
-   def get_day_list(self, day):
+   def check_off_time(self, day, current_time):
+      day_list = self.get_day_list(self.off_times, day)
+      if(day_list == None):
+         return
+      for day_item in day_list:
+         start_time = day_item["start_time"]
+         end_time = day_item["end_time"]
+         start_time_decimal = int(start_time[0]) + (int(start_time[1])/100)
+         end_time_decimal = int(end_time[0]) + (int(end_time[1])/100)
+         current_time_decimal = int(current_time[0]) + (int(current_time[1])/100)
+         if(current_time_decimal >= start_time_decimal):
+            if(current_time_decimal <= end_time_decimal):
+               self.wake_time = True
+               return True
+      self.wake_time = False
+      return False
+   
+   def get_day_list(self, day_list, day):
       if(isinstance(day, str)):
          if(day.lower() == "monday"):
-            return self.wake_monday
+            return day_list["monday"]
          if(day.lower() == "tuesday"):
-            return self.wake_tuesday
+            return day_list["tuesday"]
          if(day.lower() == "wednesday"):
-            return self.wake_wednesday
+            return day_list["wednesday"]
          if(day.lower() == "thursday"):
-            return self.wake_thursday
+            return day_list["thursday"]
          if(day.lower() == "friday"):
-            return self.wake_friday
+            return day_list["friday"]
          if(day.lower() == "saturday"):
-            return self.wake_saturday
+            return day_list["saturday"]
          if(day.lower() == "sunday"):
-            return self.wake_sunday
+            return day_list["sunday"]
       else:
          if(day == 0):
-            return self.wake_monday
+            return day_list["monday"]
          if(day == 1):
-            return self.wake_tuesday
+            return day_list["tuesday"]
          if(day == 2):
-            return self.wake_wednesday
+            return day_list["wednesday"]
          if(day == 3):
-            return self.wake_thursday
+            return day_list["thursday"]
          if(day == 4):
-            return self.wake_friday
+            return day_list["friday"]
          if(day == 5):
-            return self.wake_saturday
+            return day_list["saturday"]
          if(day == 6):
-            return self.wake_sunday
+            return day_list["sunday"]
       return None
 
    def set_wake_time(self, day, wake_time):
@@ -78,13 +84,13 @@ class wake_times_class():
       self.add_wake_time(day, wake_time)
 
    def clear_wake_times(self, day):
-      day_list = self.get_day_list(day)
+      day_list = self.get_day_list(self.wake_times, day)
       if(day_list == None):
          return
       day_list.clear()
 
    def add_wake_time(self, day, wake_time):
-      day_list = self.get_day_list(day)
+      day_list = self.get_day_list(self.wake_times, day)
       if(day_list == None):
          return
       for time_item in wake_time:
@@ -92,7 +98,7 @@ class wake_times_class():
       self.reorder_wake_time(day_list)
 
    def remove_wake_time(self, day, wake_time):
-      day_list = self.get_day_list(day)
+      day_list = self.get_day_list(self.wake_times, day)
       if(day_list == None):
          return
       day_list_copy = day_list.copy()
@@ -124,8 +130,67 @@ class wake_times_class():
                wake_time["start_time"] = rem_end_time
                wake_time["end_time"] = end_time
       self.add_wake_time(day, day_list_copy)
+
+   def set_off_time(self, day, off_time):
+      self.clear_off_times(day)
+      self.add_off_time(day, off_time)
+
+   def clear_off_times(self, day):
+      day_list = self.get_day_list(self.off_times, day)
+      if(day_list == None):
+         return
+      day_list.clear()
+
+   def add_off_time(self, day, off_time):
+      day_list = self.get_day_list(self.off_times, day)
+      if(day_list == None):
+         return
+      for time_item in off_time:
+         day_list.append(time_item)
+      self.reorder_off_time(day_list)
+
+   def remove_off_time(self, day, off_time):
+      day_list = self.get_day_list(self.off_times, day)
+      if(day_list == None):
+         return
+      day_list_copy = day_list.copy()
+      self.clear_wake_times(day)
+      rem_start_time = off_time["start_time"]
+      rem_end_time = off_time["end_time"]
+      rem_start_time_decimal = rem_start_time[0] + (rem_start_time[1]/100)
+      rem_end_time_decimal = rem_end_time[0] + (rem_end_time[1]/100)
+      for wake_item in day_list:
+         start_time = wake_item["start_time"]
+         end_time = wake_item["end_time"]
+         start_time_decimal = start_time[0] + (start_time[1]/100)
+         end_time_decimal = end_time[0] + (end_time[1]/100)
+
+         if(start_time_decimal >= rem_start_time_decimal):
+            if(end_time_decimal <= rem_end_time_decimal):
+               continue
+            else:
+               off_time["start_time"] = rem_end_time
+               off_time["end_time"] = end_time
+         else:
+            if(end_time_decimal <= rem_end_time_decimal):
+               off_time["start_time"] = start_time
+               off_time["end_time"] = rem_start_time
+            else:
+               off_time["start_time"] = start_time
+               off_time["end_time"] = rem_start_time
+               day_list_copy.append(wake_item)
+               off_time["start_time"] = rem_end_time
+               off_time["end_time"] = end_time
+      self.add_off_time(day, day_list_copy)
    
    def reorder_wake_time(self, day):
+      # get day
+      # iterate through day list and split with ":" getting start and end numbers
+      # add all start numbers to a "Start" list and add all end numbers to an "end" list
+      # iterate through the start and end list and create new ranges encompasing all the values
+      pass
+
+   def reorder_off_time(self, day):
       # get day
       # iterate through day list and split with ":" getting start and end numbers
       # add all start numbers to a "Start" list and add all end numbers to an "end" list
@@ -135,6 +200,8 @@ class wake_times_class():
 class time_class():
    time_locked = False
    hour_offset = 0
+   timer_active = False
+   timer_end_time = None
    
    def __init__(self, hour_offset=None):
       if(hour_offset != None):
@@ -210,3 +277,43 @@ class time_class():
       if(current_hour < 0):
          current_hour = current_hour + 24
       return (current_hour, current_min)
+   
+   def check_timer(self):
+      current_time = time.localtime()
+      current_time_int = time.mktime(current_time)
+      if(self.timer_end_time == None):
+         self.timer_active = False
+      else:
+         if(current_time_int < self.timer_end_time):
+            self.timer_active = True
+         else:
+            self.timer_end_time = None
+            self.timer_active = False
+   
+   def set_timer(self, timer_time):
+      current_time = time.localtime()
+      timer_hour = int(timer_time[0])
+      timer_minute = int(timer_time[1])
+      timer_second = int(timer_time[2])
+      end_time = (current_time[0], current_time[1], current_time[2], current_time[3]+timer_hour, current_time[4]+timer_minute, current_time[5]+timer_second, current_time[6], current_time[7])
+      self.timer_end_time = time.mktime(end_time)
+      self.timer_active = True
+
+   def clear_timer(self):
+      self.timer_end_time = None
+      self.timer_active = False
+
+   def get_timer_status(self):
+      if(self.timer_active == True):
+         current_time = time.localtime()
+         current_time_int = time.mktime(current_time)
+         timer_remaining = self.timer_end_time - current_time_int
+         remaining_hours = int(timer_remaining / 3600)
+         timer_remaining = timer_remaining - (remaining_hours*3600)
+         remaining_minutes = int(timer_remaining / 60)
+         timer_remaining = timer_remaining - (remaining_minutes*60)
+         remaining_seconds = int(timer_remaining)
+         return (remaining_hours, remaining_minutes, remaining_seconds)
+      else:
+         return (0,0,0)
+

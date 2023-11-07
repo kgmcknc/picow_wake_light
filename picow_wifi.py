@@ -85,6 +85,7 @@ class picow_wifi_class():
    wifi_ssid_select = -1 # -1 is auto, index is what index is selected
    wifi_ssid_list = []
    wifi_pw_list = []
+   wifi_config_list = []
    wifi_scan_list = []
    wifi_current_ssid = ""
    wifi_ip_address = ""
@@ -98,8 +99,8 @@ class picow_wifi_class():
    def __init__(self, ssid=None, password=None, auto_connect=None, wait_for_connect=False, connect_sleep=None):
       self.configure_wifi(ssid=ssid, password=password, auto_connect=auto_connect, wait_for_connect=wait_for_connect, connect_sleep=connect_sleep)
 
-   def configure_wifi(self, ssid=None, password=None, auto_connect=None, wait_for_connect=False, connect_sleep=None):
-      self.add_ssid(ssid, password)
+   def configure_wifi(self, ssid=None, password=None, config=None, auto_connect=None, wait_for_connect=False, connect_sleep=None):
+      self.add_ssid(ssid, password, config)
       if(auto_connect != None):
          self.wifi_auto_connect = auto_connect
       if(wait_for_connect != None):
@@ -107,17 +108,17 @@ class picow_wifi_class():
       if(connect_sleep != None):
          self.wifi_connect_sleep = connect_sleep
 
-   def add_ssid(self, ssid=None, password=None):
+   def add_ssid(self, ssid=None, password=None, config=None):
       if((ssid == None) or (password == None)):
          return
       if(type(ssid) != type(password)):
          return
-      if(isinstance(ssid, list) and isinstance(password, list)):
-         if(len(ssid) == len(password)):
+      if(isinstance(ssid, list) and isinstance(password, list) and isinstance(config, list)):
+         if((len(ssid) == len(password)) and (len(ssid) == len(config))):
             for i in range(len(ssid)):
-               self.insert_ssid(ssid[i], password[i])
+               self.insert_ssid(ssid[i], password[i], config[i])
       else:
-         self.insert_ssid(ssid, password)
+         self.insert_ssid(ssid, password, config)
 
    def remove_ssid(self, ssid=None):
       if(ssid == None):
@@ -128,19 +129,38 @@ class picow_wifi_class():
       else:
          self.delete_ssid(ssid)
 
-   def insert_ssid(self, ssid, password):
+   def insert_ssid(self, ssid, password, config):
       if(isinstance(ssid, str) and isinstance(password, str)):
          if(ssid in self.wifi_ssid_list):
             index = self.wifi_ssid_list.index(ssid)
             self.wifi_pw_list[index] = password
+            validated_config = self.verify_config(config)
+            self.wifi_config_list[index] = validated_config
          else:
             self.wifi_ssid_list.append(ssid)
             self.wifi_pw_list.append(password)
+            validated_config = self.verify_config(config)
+            self.wifi_config_list.append(validated_config)
+   
+   def verify_config(self, config):
+      if(config == "dhcp"):
+         return config
+      else:
+         if(len(config) == 4):
+            for entry in config:
+               if(isinstance(entry, str) and entry != ""):
+                  continue
+               else:
+                  return "dhcp"
+            return config
+         else:
+            return "dhcp"
 
    def delete_ssid(self, ssid):
       if(ssid in self.wifi_ssid_list):
          index = self.wifi_ssid_list.index(ssid)
          self.wifi_pw_list.remove(self.wifi_pw_list[index])
+         self.wifi_config_list.remove(self.wifi_config_list[index])
          self.wifi_ssid_list.remove(ssid)
 
    def select_ssid(self, selection):
@@ -219,6 +239,8 @@ class picow_wifi_class():
    def connect_wifi(self):
       if(self.wifi_active == False):
          return
+      if(self.wifi_connected == True):
+         return
       if(self.wifi_ssid_select >= 0):
          self.select_ssid(self.wifi_ssid_select)
       else:
@@ -227,9 +249,13 @@ class picow_wifi_class():
 
       if(self.wifi_ssid_select < 0 or self.wifi_ssid_select >= len(self.wifi_ssid_list)):
          return
+      print("First connect:", self.wifi.ifconfig())
       self.wifi_current_ssid = self.wifi_ssid_list[self.wifi_ssid_select]
       print("Connecting to:", self.wifi_current_ssid)
       self.wifi.connect(self.wifi_ssid_list[self.wifi_ssid_select], self.wifi_pw_list[self.wifi_ssid_select])
+      print("Setting Config:", self.wifi_config_list[self.wifi_ssid_select])
+      self.wifi.ifconfig(self.wifi_config_list[self.wifi_ssid_select])
+
       if(self.wifi_wait_for_connect == True):
          self.wait_for_connected()
          if(self.wifi_connected == False):
@@ -268,6 +294,7 @@ class picow_wifi_class():
          self.connect_counter = 0
          self.wifi_connected = True
          self.wifi_ip_address = self.wifi.ifconfig()[0]
+         print(self.wifi.ifconfig())
          print(f"""Connected to {self.wifi_ssid_list[self.wifi_ssid_select]} at {self.wifi_ip_address}""")
    
 class picow_network_class(picow_ap_class, picow_wifi_class):
