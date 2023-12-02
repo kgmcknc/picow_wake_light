@@ -128,22 +128,12 @@ def main():
       machine.reset()
 
 def copy_wake_schedule(database: save_data.save_data_class, sched: schedule.wake_times_class):
-   sched.wake_times["sunday"] = database.wake_times["sunday"].copy()
-   sched.wake_times["monday"] = database.wake_times["monday"].copy()
-   sched.wake_times["tuesday"] = database.wake_times["tuesday"].copy()
-   sched.wake_times["wednesday"] = database.wake_times["wednesday"].copy()
-   sched.wake_times["thursday"] = database.wake_times["thursday"].copy()
-   sched.wake_times["friday"] = database.wake_times["friday"].copy()
-   sched.wake_times["saturday"] = database.wake_times["saturday"].copy()
-
-   sched.off_times["sunday"] = database.off_times["sunday"].copy()
-   sched.off_times["monday"] = database.off_times["monday"].copy()
-   sched.off_times["tuesday"] = database.off_times["tuesday"].copy()
-   sched.off_times["wednesday"] = database.off_times["wednesday"].copy()
-   sched.off_times["thursday"] = database.off_times["thursday"].copy()
-   sched.off_times["friday"] = database.off_times["friday"].copy()
-   sched.off_times["saturday"] = database.off_times["saturday"].copy()
-
+   for key in sched.wake_times:
+      sched.wake_times[key] = database.wake_times[key].copy()
+   
+   for key in sched.off_times:
+      sched.off_times[key] = database.off_times[key].copy()
+   
 def sync_save_file(database: save_data.save_data_class, wifi: picow_wifi.picow_network_class, sched: schedule.wake_times_class, sched_time: schedule.time_class):
    file_changed = False
    if(database.ap_ssid != wifi.ap_ssid):
@@ -164,12 +154,17 @@ def sync_save_file(database: save_data.save_data_class, wifi: picow_wifi.picow_n
    if(database.hour_offset != sched_time.hour_offset):
       database.hour_offset = sched_time.hour_offset
       file_changed = True
-   if(database.wake_times != sched.wake_times):
-      database.wake_times = sched.wake_times.copy()
-      file_changed = True
-   if(database.off_times != sched.off_times):
-      database.off_times = sched.off_times.copy()
-      file_changed = True
+
+   for key in database.wake_times:
+      if(database.wake_times[key] != sched.wake_times[key]):
+         database.wake_times[key] = sched.wake_times[key].copy()
+         file_changed = True
+   
+   for key in database.off_times:
+      if(database.off_times[key] != sched.off_times[key]):
+         database.off_times[key] = sched.off_times[key].copy()
+         file_changed = True
+
    if(database.led_mode != led.led_mode):
       database.led_mode = led.led_mode
       file_changed = True
@@ -319,19 +314,25 @@ def process_get_request(request, wifi: picow_wifi.picow_network_class, wake_time
       color_string = color_string + value
       response['get_timer_color'] = color_string
    if "get_wake_times" in get_data:
-      day = get_data["get_wake_times"]["day"]
-      day_list = wake_times.get_day_list(wake_times.wake_times, day)
-      if(day_list != None):
-         response['get_wake_times'] = day_list.copy()
+      if "day" in get_data["get_wake_times"]:   
+         day = get_data["get_wake_times"]["day"]
+         day_list = wake_times.get_day_list(wake_times.wake_times, day)
+         if(day_list != None):
+            response['get_wake_times'] = day_list.copy()
+         else:
+            response['get_wake_times'] = ""
       else:
-         response['get_wake_times'] = ""
+         response['get_wake_times'] = wake_times.wake_times
    if "get_off_times" in get_data:
-      day = get_data["get_off_times"]["day"]
-      day_list = wake_times.get_day_list(wake_times.off_times, day)
-      if(day_list != None):
-         response['get_off_times'] = day_list.copy()
+      if "day" in get_data["get_off_times"]:   
+         day = get_data["get_off_times"]["day"]
+         day_list = wake_times.get_day_list(wake_times.off_times, day)
+         if(day_list != None):
+            response['get_off_times'] = day_list.copy()
+         else:
+            response['get_off_times'] = ""
       else:
-         response['get_wake_times'] = ""
+         response['get_off_times'] = wake_times.off_times
    if "get_led_status" in get_data:
       response['get_led_status'] = led.led_status
    if "get_timer_status" in get_data:

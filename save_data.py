@@ -12,10 +12,10 @@ class save_data_class():
    config_list = []
    hour_offset = 0
    led_mode = 0
-   wake_led = {"red":0,"blue":0,"green":0}
-   sleep_led = {"red":0,"blue":0,"green":0}
-   custom_led = {"red":0,"blue":0,"green":0}
-   timer_led = {"red":0,"blue":0,"green":0}
+   wake_led = {"blue":0,"green":0,"red":0}
+   sleep_led = {"blue":0,"green":0,"red":0}
+   custom_led = {"blue":0,"green":0,"red":0}
+   timer_led = {"blue":0,"green":0,"red":0}
    wake_times = {"monday":[],"tuesday":[],"wednesday":[],"thursday":[],"friday":[],"saturday":[],"sunday":[]}
    off_times = {"monday":[],"tuesday":[],"wednesday":[],"thursday":[],"friday":[],"saturday":[],"sunday":[]}
    
@@ -59,9 +59,19 @@ class save_data_class():
          else:
             print("Unknown File Key:", key)
       new_list = self.save_class_to_text_list()
-      if(file_lines != new_list):
-         print("file_lines:", file_lines)
-         print("class vars:", new_list)
+      rewrite_file = 0
+      for class_var in class_vars:
+         key_found = 0
+         for line in file_lines:
+            line_data = json.loads(line)
+            key_list = list(line_data.keys())
+            key = key_list[0]
+            if(key in class_var):
+               key_found = 1
+               break
+         if(key_found == 0):
+            rewrite_file = 1
+      if(rewrite_file):
          print("save file doesn't match class...rewriting save file")
          self.rewrite_save_file()
 

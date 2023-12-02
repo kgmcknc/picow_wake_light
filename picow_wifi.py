@@ -325,6 +325,7 @@ class picow_network_class(picow_ap_class, picow_wifi_class):
       if(self.network_mode == -1):
          return False
       if(self.network_mode == 0):
+         self.check_wifi_connection()
          if(self.wifi_active == True and self.wifi_connected == True):
             return True
          else:

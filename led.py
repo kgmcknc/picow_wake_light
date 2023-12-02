@@ -143,11 +143,11 @@ def configure_led_duty(red_duty=None, green_duty=None, blue_duty=None):
    global duty_green
    global duty_blue
    if(red_duty != None):
-      duty_blue = red_duty
+      red_duty = red_duty
    if(green_duty != None):
       duty_green = green_duty
    if(blue_duty != None):
-      duty_red = blue_duty
+      blue_duty = blue_duty
 
 def get_led_duty():
    global duty_red

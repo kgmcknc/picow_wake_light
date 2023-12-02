@@ -10,7 +10,7 @@ def get_index_html():
             <br>
             <br>
             Select a day:
-            <select name="weekday" id="weekday" onchange="get_wake_times()">
+            <select name="weekday" id="weekday" onchange="update_wake_status()">
             <option value="sunday">Sunday</option>
             <option value="monday">Monday</option>
             <option value="tuesday">Tuesday</option>
@@ -103,6 +103,8 @@ def get_index_html():
 def get_index_js():
    javascript_file = '''
       led_mode = 0
+      wake_schedule = 0
+      off_schedule = 0
       timer_remaining = (0, 0, 0)
       setInterval(get_status, 5000);
       get_led_values()
@@ -117,16 +119,20 @@ def get_index_js():
          get_custom_color()
          await sleep(500)
          get_timer_color()
-         await sleep(500)
-         get_wake_times()
       }
       async function get_status(){
-         await sleep(1000)
-         get_led_mode()
-         await sleep(1000)
-         get_wake_status()
-         await sleep(1000)
-         get_timer_status()
+         if(!document.hidden){
+            await sleep(600)
+            get_led_mode()
+            await sleep(600)
+            get_wake_status()
+            await sleep(600)
+            get_timer_status()
+            await sleep(600)
+            get_wake_times()
+            await sleep(600)
+            get_off_times()
+         }
       }
       function sleep(ms) {
          return new Promise(resolve => setTimeout(resolve, ms));
@@ -246,21 +252,25 @@ def get_index_js():
          var start_time = [start_split[0], start_split[1]]
          var end_time = [end_split[0], end_split[1]]
          var send_data = {"add_wake_time": {"day":day, "time":{"start_time":start_time,"end_time":end_time}}}
-         send_xmlhttp_post(send_data, get_wake_times)
+         send_xmlhttp_post(send_data)
       }
       function clear_wake_times(){
          var day = document.getElementById("weekday").value
          var send_data = {"clear_wake_times": day}
-         send_xmlhttp_post(send_data, get_wake_times)
+         send_xmlhttp_post(send_data)
       }
       function get_wake_times(){
-         var day = document.getElementById("weekday").value
-         var send_data = {"get_wake_times": {"day":day}}
+         var send_data = {"get_wake_times": ""}
          send_xmlhttp_get(send_data, set_wake_schedule)
       }
       function set_wake_schedule(response_data){
          schedule_div = document.getElementById("schedule_div")
-         wake_list = response_data["get_wake_times"]
+         wake_schedule = response_data["get_wake_times"]
+         update_status_divs()
+      }
+      function update_wake_status(){
+         var day = document.getElementById("weekday").value
+         wake_list = wake_schedule[day]
          while(schedule_div.childElementCount > 0){
             schedule_div.removeChild(schedule_div.children[0])
          }
@@ -309,21 +319,25 @@ def get_index_js():
          var start_time = [start_split[0], start_split[1]]
          var end_time = [end_split[0], end_split[1]]
          var send_data = {"add_off_time": {"day":day, "time":{"start_time":start_time,"end_time":end_time}}}
-         send_xmlhttp_post(send_data, get_off_times)
+         send_xmlhttp_post(send_data)
       }
       function clear_off_times(){
          var day = document.getElementById("weekday").value
          var send_data = {"clear_off_times": day}
-         send_xmlhttp_post(send_data, get_off_times)
+         send_xmlhttp_post(send_data)
       }
       function get_off_times(){
-         var day = document.getElementById("weekday").value
-         var send_data = {"get_off_times": {"day":day}}
+         var send_data = {"get_off_times": ""}
          send_xmlhttp_get(send_data, set_off_schedule)
       }
       function set_off_schedule(response_data){
          off_schedule_div = document.getElementById("off_schedule_div")
-         off_list = response_data["get_off_times"]
+         off_schedule = response_data["get_off_times"]
+         update_status_divs()
+      }
+      function update_off_status(){
+         var day = document.getElementById("weekday").value
+         off_list = off_schedule[day]
          while(off_schedule_div.childElementCount > 0){
             off_schedule_div.removeChild(off_schedule_div.children[0])
          }
@@ -362,6 +376,10 @@ def get_index_js():
             new_child.innerHTML = start_string+"<br>"+end_string
             off_schedule_div.appendChild(new_child)
          }
+      }
+      function update_status_divs(){
+         update_wake_status()
+         update_off_status()
       }
       function get_led_mode(){
          var send_data = {"get_led_mode": ""}
@@ -464,17 +482,18 @@ def get_index_js():
                      response_json = JSON.parse(this.responseText);
                   } catch (e) {
                      console.log(e)
+                     alert("Getting data failed - try again!")
                      return
                   }
                   if(response_json != "DB_ERR"){
                      callback(response_json)
                   }
                }
-            } else {
-               if(this.readyState == 4 && this.status == 0){
-                  console.log("ERROR")
-                  console.log(this.statusText)
-               }
+            }
+            if(this.readyState == 4 && this.status != 200){
+               alert("Getting data failed - try again!")
+               console.log("ERROR")
+               console.log(this.statusText)
             }
          }
       }
@@ -495,12 +514,16 @@ def get_index_js():
                   try {
                      response_json = JSON.parse(this.responseText);
                   } catch (e) {
+                     alert("Setting data failed - try again!")
                      return
                   }
                   if(response_json != "DB_ERR"){
                      callback(response_json);
                   }
                }
+            }
+            if (this.readyState == 4 && this.status != 200){
+               alert("Setting data failed - try again!")
             }
          }
       }
