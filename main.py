@@ -6,6 +6,7 @@ import json
 import webpage
 import schedule
 import machine
+import urequests as requests
 import gc
 import led
 
@@ -20,6 +21,8 @@ infinite_main_loop = False
 # re-lock time every hour?
 
 picow_led = machine.Pin("LED", machine.Pin.OUT)
+
+TEXT_URL = "http://wifitest.adafruit.com/testwifi/index.html"
 
 def main():
    gc.collect()
@@ -88,10 +91,24 @@ def main():
             sched_time.get_network_time()
          
          print("Starting Main Network Connected While Loop")
+         current_check = 0
+         last_check = 0
          while (wifi.check_network_connected() == True):
             if(sched_time.time_locked == False):
                if(wifi.network_mode == 0):
                   sched_time.get_network_time()
+            
+            if(sched_time.time_locked == True):
+               current_check = sched_time.get_local_time()
+               if(current_check != last_check):
+                  last_check = current_check
+                  try:
+                     r = requests.get(TEXT_URL)
+                     r.close()
+                  except OSError as e:
+                     print(e)
+                     main_cleanup(server_socket, wifi)
+                     machine.reset()
             
             led.blink_ip_addr(picow_led, device_ip)
 

@@ -47,6 +47,7 @@ class picow_ap_class():
          self.ap.config(ssid=ssid, password=password)
          self.ap.ifconfig((self.ap_ip_address, self.ap_subnet_mask, self.ap_gateway, self.ap_dns_server))
          self.ap.active(True)
+         self.ap.config(pm = 0xa11140)
 
          while(self.ap.active() == False):
             sleep(0.5)
@@ -177,6 +178,7 @@ class picow_wifi_class():
    def enable_wifi(self):
       if(self.wifi_active == False):
          self.wifi.active(True)
+         self.wifi.config(pm = 0xa11140)
          self.wifi_active = True
          self.wifi_connected = False
       self.wifi_connect_counter = 0

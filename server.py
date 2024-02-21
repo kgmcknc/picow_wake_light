@@ -4,6 +4,8 @@ import select
 class server_socket_class:
    created = 0
    connected = 0
+   #open_counter = 0
+   #close_counter = 0
 
    def __init__(self):
       self.server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -47,6 +49,7 @@ class server_socket_class:
    
    def reject_connection(self):
       try:
+         print("rejecting connection")
          new_connection = self.server_socket.accept()
          new_connection[0].close()
       except:
@@ -56,8 +59,11 @@ class server_socket_class:
       try:
          new_connection = self.server_socket.accept()
          self.connection = new_connection[0]
+         #print("accepting connection:", self.open_counter)
+         #self.open_counter = self.open_counter + 1
          self.connected = 1
       except:
+         print("error accepting")
          self.connected = 0
 
    def check_read_ready(self):
@@ -93,10 +99,13 @@ class server_socket_class:
 
    def close_connection(self):
       if(self.connected == 1):
+         #print("closing connection:", self.close_counter)
+         #self.close_counter = self.close_counter + 1
          self.connection.close()
          self.connected = 0
 
    def destroy_socket(self):
+      print("destroying connection")
       self.close_connection()
       if(self.created == 1):
          self.created = 0
