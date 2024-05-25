@@ -18,6 +18,7 @@ class save_data_class():
    timer_led = {"blue":0,"green":0,"red":0}
    wake_times = {"monday":[],"tuesday":[],"wednesday":[],"thursday":[],"friday":[],"saturday":[],"sunday":[]}
    off_times = {"monday":[],"tuesday":[],"wednesday":[],"thursday":[],"friday":[],"saturday":[],"sunday":[]}
+   timer_end_time = 0.0
    
    def __init__(self):
       self.init_class_from_save_file()

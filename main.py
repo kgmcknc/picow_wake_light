@@ -51,6 +51,9 @@ def main():
             wifi.ap_password = database.ap_pw
 
          sched_time.hour_offset = database.hour_offset
+         sched_time.timer_end_time = database.timer_end_time
+         sched_time.check_timer()
+         print(database.timer_end_time, sched_time.timer_end_time)
          print("hour offset, ", sched_time.hour_offset, database.hour_offset)
          
          if(len(database.ssid_list) > 0):
@@ -195,6 +198,9 @@ def sync_save_file(database: save_data.save_data_class, wifi: picow_wifi.picow_n
       database.custom_led = led.custom_led.copy()
    if(database.timer_led != led.timer_led):
       database.timer_led = led.timer_led.copy()
+      file_changed = True
+   if(database.timer_end_time != sched_time.timer_end_time):
+      database.timer_end_time = sched_time.timer_end_time
       file_changed = True
 
    if(file_changed == True):

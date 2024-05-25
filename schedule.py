@@ -201,7 +201,7 @@ class time_class():
    time_locked = False
    hour_offset = 0
    timer_active = False
-   timer_end_time = None
+   timer_end_time = 0.0
    
    def __init__(self, hour_offset=None):
       if(hour_offset != None):
@@ -281,13 +281,13 @@ class time_class():
    def check_timer(self):
       current_time = time.localtime()
       current_time_int = time.mktime(current_time)
-      if(self.timer_end_time == None):
+      if(self.timer_end_time == 0.0):
          self.timer_active = False
       else:
          if(current_time_int < self.timer_end_time):
             self.timer_active = True
          else:
-            self.timer_end_time = None
+            self.timer_end_time = 0.0
             self.timer_active = False
    
    def set_timer(self, timer_time):
@@ -300,7 +300,7 @@ class time_class():
       self.timer_active = True
 
    def clear_timer(self):
-      self.timer_end_time = None
+      self.timer_end_time = 0.0
       self.timer_active = False
 
    def get_timer_status(self):
